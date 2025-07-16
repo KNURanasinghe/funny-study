@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import {loadStripe} from '@stripe/stripe-js';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
@@ -104,6 +105,22 @@ const TeacherDashboard = () => {
       navigate('/login/teacher');
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+  // Check if there's pending premium content to submit
+  const pendingContent = localStorage.getItem('pendingPremiumContent');
+  if (pendingContent && teacherPremiumStatus?.ispaid) {
+    try {
+      const contentData = JSON.parse(pendingContent);
+      submitPremiumContent(contentData);
+      localStorage.removeItem('pendingPremiumContent');
+    } catch (error) {
+      console.error('Error processing pending premium content:', error);
+      localStorage.removeItem('pendingPremiumContent');
+    }
+  }
+}, [teacherPremiumStatus]);
+
 
   // Load Google Maps API
   useEffect(() => {
@@ -327,70 +344,130 @@ const TeacherDashboard = () => {
     }
   };
 
-  const handlePremiumSubmit = async () => {
-    if (!validatePremiumForm()) {
-      return;
+ const handlePremiumSubmit = async () => {
+  if (!validatePremiumForm()) {
+    return;
+  }
+
+  try {
+    setPremiumLoading(true);
+    
+    // Instead of directly submitting to PocketBase, redirect to Stripe payment
+    const stripe = await loadStripe('pk_test_51RlPFJPLqHqCP926lPQTDC69S32MQE5V01FtJvFlSLeRGCRzkC3EsH5TGLFTD4UExjtnlUfWoHjUPzmgQaSl86lU00VX8NqTZa');
+    
+    const body = {
+      teacherEmail: premiumData.mail,
+      teacherName: user?.name || ''
+    };
+
+    const headers = {
+      "Content-Type": "application/json"
+    };
+
+    const response = await fetch("http://localhost:4242/create-premium-checkout-session", {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to create premium checkout session');
     }
 
-    try {
-      setPremiumLoading(true);
-      
-      if (premiumData.link_or_video) {
-        // Submit with YouTube links
-        const response = await fetch(`${POCKETBASE_URL}/api/collections/findtutor_premium_teachers/records`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+    const session = await response.json();
+
+    // Store the premium content data in localStorage temporarily
+    // This will be used after successful payment
+    const premiumContentData = {
+      link_or_video: premiumData.link_or_video,
+      link1: premiumData.link1,
+      link2: premiumData.link2,
+      link3: premiumData.link3,
+      video1: premiumData.video1,
+      video2: premiumData.video2,
+      video3: premiumData.video3
+    };
+    
+    localStorage.setItem('pendingPremiumContent', JSON.stringify(premiumContentData));
+
+    const result = await stripe.redirectToCheckout({
+      sessionId: session.id
+    });
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+
+  } catch (error) {
+    console.error('Premium payment error:', error);
+    setError(error.message || 'Failed to initiate premium payment');
+  } finally {
+    setPremiumLoading(false);
+  }
+};
+
+
+const submitPremiumContent = async (contentData) => {
+  try {
+    const teacherEmail = user?.email;
+    
+    if (contentData.link_or_video) {
+      // Submit with YouTube links
+      const response = await fetch('http://localhost:4242/update-premium-content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          teacherEmail: teacherEmail,
+          contentData: {
             link_or_video: true,
-            link1: premiumData.link1,
-            link2: premiumData.link2,
-            link3: premiumData.link3,
-            ispaid: true,
-            mail: premiumData.mail
-          }),
-        });
+            link1: contentData.link1,
+            link2: contentData.link2,
+            link3: contentData.link3,
+          }
+        }),
+      });
 
-        if (response.ok) {
-          setSuccess('🎉 Premium subscription with video links submitted successfully!');
-          handleClosePremiumModal();
-          fetchPremiumStatus();
-        } else {
-          const errorData = await response.json();
-          setError('Failed to submit premium subscription. Please try again.');
-        }
+      if (response.ok) {
+        console.log('Premium content with links submitted successfully');
+        fetchPremiumStatus();
       } else {
-        // Submit with video files
-        const formData = new FormData();
-        formData.append('link_or_video', false);
-        formData.append('video1', premiumData.video1);
-        formData.append('video2', premiumData.video2);
-        formData.append('video3', premiumData.video3);
-        formData.append('ispaid', true);
-        formData.append('mail', premiumData.mail);
+        console.error('Failed to submit premium content with links');
+      }
+    } else {
+      // Submit with video files directly to PocketBase
+      const formData = new FormData();
+      formData.append('link_or_video', false);
+      if (contentData.video1) formData.append('video1', contentData.video1);
+      if (contentData.video2) formData.append('video2', contentData.video2);
+      if (contentData.video3) formData.append('video3', contentData.video3);
 
-        const response = await fetch(`${POCKETBASE_URL}/api/collections/findtutor_premium_teachers/records`, {
-          method: 'POST',
+      // First get the existing record ID
+      const checkResponse = await fetch(`${POCKETBASE_URL}/api/collections/findtutor_premium_teachers/records?filter=(mail='${teacherEmail}')`);
+      const checkData = await checkResponse.json();
+      
+      if (checkData.items && checkData.items.length > 0) {
+        const recordId = checkData.items[0].id;
+        
+        const response = await fetch(`${POCKETBASE_URL}/api/collections/findtutor_premium_teachers/records/${recordId}`, {
+          method: 'PATCH',
           body: formData,
         });
 
         if (response.ok) {
-          setSuccess('🎉 Premium subscription with videos submitted successfully!');
-          handleClosePremiumModal();
+          console.log('Premium content with videos submitted successfully');
           fetchPremiumStatus();
         } else {
-          const errorData = await response.json();
-          setError('Failed to submit premium subscription. Please try again.');
+          console.error('Failed to upload videos');
         }
       }
-    } catch (error) {
-      console.error('Premium submission error:', error);
-      setError('Network error. Please check your connection and try again.');
-    } finally {
-      setPremiumLoading(false);
     }
-  };
+  } catch (error) {
+    console.error('Content submission error:', error);
+  }
+};
+
 
   const handleClosePremiumModal = () => {
     setShowPremiumModal(false);
@@ -477,33 +554,54 @@ const TeacherDashboard = () => {
     }
   };
 
-  const handlePurchaseContact = async (requestId) => {
-    if (!window.confirm('Purchase student contact information for $5.00?')) return;
+  // Update the handlePurchaseContact function in your TeacherDashboard component
 
-    try {
-      setLoading(true);
-      const teacherId = user?.teacherId || user?.id;
-      
-      const response = await axios.post(`${API_BASE_URL}/connect/requests/${requestId}/purchase`, {
-        teacherId: teacherId
-      });
-      
-      setSuccess('Contact information purchased successfully!');
-      
-      // Show contact details
-      alert(`Student Contact Info:\nName: ${response.data.contactInfo.studentName}\nEmail: ${response.data.contactInfo.email}\nPhone: ${response.data.contactInfo.phoneNumber}`);
-      
-      // Refresh requests
-      fetchRequests();
-      fetchRequestsCount();
-      
-    } catch (error) {
-      console.error('Error purchasing contact:', error);
-      setError(error.response?.data?.error || 'Failed to purchase contact information');
-    } finally {
-      setLoading(false);
+const handlePurchaseContact = async (requestId) => {
+  if (!window.confirm('Purchase student contact information for £7.00?')) return;
+
+  try {
+    setLoading(true);
+    
+    const stripe = await loadStripe('pk_test_51RlPFJPLqHqCP926lPQTDC69S32MQE5V01FtJvFlSLeRGCRzkC3EsH5TGLFTD4UExjtnlUfWoHjUPzmgQaSl86lU00VX8NqTZa');
+    
+    const teacherId = user?.teacherId || user?.id;
+    
+    const body = {
+      requestId: requestId,
+      teacherId: teacherId
+    };
+
+    const headers = {
+      "Content-Type": "application/json"
+    };
+
+    const response = await fetch("http://localhost:4242/create-checkout-session", {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to create checkout session');
     }
-  };
+
+    const session = await response.json();
+
+    const result = await stripe.redirectToCheckout({
+      sessionId: session.id
+    });
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+
+  } catch (error) {
+    console.error('Error purchasing contact:', error);
+    setError(error.message || 'Failed to initiate payment');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleViewRequestDetails = (request) => {
     setSelectedRequest(request);
@@ -840,160 +938,208 @@ const TeacherDashboard = () => {
 
         <div className="content-body">
           {/* Premium Tab */}
-          {activeTab === 'premium' && (
-            <div className="card">
-              <div className="card-body">
-                <div className="premium-content">
-                  {/* Header */}
-                  <div className="text-center mb-5">
-                    <div className="premium-icon mb-3">
-                      <i className="bi bi-star-fill"></i>
-                    </div>
-                    <h3 className="premium-title">Premium Teaching Experience</h3>
-                    <p className="premium-subtitle text-muted">
-                      Showcase your teaching skills and connect directly with students
-                    </p>
-                  </div>
+         {activeTab === 'premium' && (
+  <div className="card">
+    <div className="card-body">
+      <div className="premium-content">
+        {/* Header */}
+        <div className="text-center mb-5">
+          <div className="premium-icon mb-3">
+            <i className="bi bi-star-fill"></i>
+          </div>
+          <h3 className="premium-title">Premium Teaching Experience</h3>
+          <p className="premium-subtitle text-muted">
+            Showcase your teaching skills and connect directly with students
+          </p>
+        </div>
 
-                  {/* Why Premium Section */}
-                  <div className="why-premium mb-5">
-                    <h4 className="section-title">
-                      <i className="bi bi-question-circle me-2"></i>
-                      Why subscription is a good choice?
-                    </h4>
-                    <div className="premium-description">
-                      <p>
-                        The students reaching your profile can see your <strong>live teaching</strong>. It makes them get a good understanding 
-                        of your teaching and the impact of your lessons that can have on them.
-                      </p>
-                      <p>
-                        We allow you to <strong>share your contact details directly through the videos</strong>. So that any student who visits 
-                        your profile can contact you directly without any delay.
-                      </p>
-                    </div>
-                  </div>
+        {/* Premium Pricing */}
+        <div className="pricing-section mb-5">
+          <div className="pricing-card">
+            <div className="pricing-header">
+              <h4 className="pricing-title">Premium Subscription</h4>
+              <div className="pricing-price">
+                <span className="price-amount">£49</span>
+                <span className="price-period">one-time</span>
+              </div>
+            </div>
+            <ul className="pricing-features">
+              <li><i className="bi bi-check-circle-fill me-2"></i>3 Teaching Video Showcase</li>
+              <li><i className="bi bi-check-circle-fill me-2"></i>Direct Contact Sharing</li>
+              <li><i className="bi bi-check-circle-fill me-2"></i>Premium Badge</li>
+              <li><i className="bi bi-check-circle-fill me-2"></i>Higher Visibility</li>
+              <li><i className="bi bi-check-circle-fill me-2"></i>Priority Listing</li>
+            </ul>
+          </div>
+        </div>
 
-                  {/* Benefits Section */}
-                  <div className="benefits-section mb-5">
-                    <h4 className="section-title">
-                      <i className="bi bi-check-circle me-2"></i>
-                      Premium Benefits
-                    </h4>
-                    <div className="row">
-                      <div className="col-md-6">
-                        <div className="benefit-item">
-                          <i className="bi bi-camera-video text-primary"></i>
-                          <div>
-                            <h6>Live Teaching Showcase</h6>
-                            <p className="text-muted mb-0">Let students see your actual teaching style</p>
-                          </div>
-                        </div>
-                        <div className="benefit-item">
-                          <i className="bi bi-person-lines-fill text-primary"></i>
-                          <div>
-                            <h6>Direct Contact Sharing</h6>
-                            <p className="text-muted mb-0">Share contact details through your videos</p>
-                          </div>
-                        </div>
-                        <div className="benefit-item">
-                          <i className="bi bi-lightning-charge text-primary"></i>
-                          <div>
-                            <h6>Instant Connections</h6>
-                            <p className="text-muted mb-0">Students can contact you immediately</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="col-md-6">
-                        <div className="benefit-item">
-                          <i className="bi bi-graph-up-arrow text-primary"></i>
-                          <div>
-                            <h6>Increased Visibility</h6>
-                            <p className="text-muted mb-0">Stand out from other teachers</p>
-                          </div>
-                        </div>
-                        <div className="benefit-item">
-                          <i className="bi bi-heart text-primary"></i>
-                          <div>
-                            <h6>Build Trust</h6>
-                            <p className="text-muted mb-0">Show your personality and teaching method</p>
-                          </div>
-                        </div>
-                        <div className="benefit-item">
-                          <i className="bi bi-currency-dollar text-primary"></i>
-                          <div>
-                            <h6>More Students</h6>
-                            <p className="text-muted mb-0">Attract more students to your classes</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+        {/* Why Premium Section */}
+        <div className="why-premium mb-5">
+          <h4 className="section-title">
+            <i className="bi bi-question-circle me-2"></i>
+            Why subscription is a good choice?
+          </h4>
+          <div className="premium-description">
+            <p>
+              The students reaching your profile can see your <strong>live teaching</strong>. It makes them get a good understanding 
+              of your teaching and the impact of your lessons that can have on them.
+            </p>
+            <p>
+              We allow you to <strong>share your contact details directly through the videos</strong>. So that any student who visits 
+              your profile can contact you directly without any delay.
+            </p>
+          </div>
+        </div>
 
-                  {/* Current Status */}
-                  {teacherPremiumStatus ? (
-                    <div className="current-status mb-5">
-                      <div className={`status-card ${teacherPremiumStatus.ispaid ? 'premium-active' : 'premium-pending'}`}>
-                        <div className="status-header">
-                          <div className="status-icon">
-                            <i className={`bi ${teacherPremiumStatus.ispaid ? 'bi-check-circle-fill' : 'bi-clock-fill'}`}></i>
-                          </div>
-                          <div>
-                            <h5 className="status-title">
-                              {teacherPremiumStatus.ispaid ? 'Premium Active' : 'Premium Pending'}
-                            </h5>
-                            <p className="status-subtitle">
-                              {teacherPremiumStatus.ispaid 
-                                ? 'Your premium subscription is active and videos are visible to students'
-                                : 'Your premium request is pending approval'
-                              }
-                            </p>
-                          </div>
-                        </div>
-                        
-                        {/* Show videos preview */}
-                        <div className="videos-preview mt-4">
-                          <h6 className="videos-title">Your Teaching Videos</h6>
-                          <div className="row">
-                            {[0, 1, 2].map((index) => (
-                              <div key={index} className="col-md-4 mb-3">
-                                {renderVideoPreview(teacherPremiumStatus, index)}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="cta-section text-center">
-                      <div className="premium-card">
-                        <div className="premium-badge">
-                          <i className="bi bi-gem"></i>
-                          <span>PREMIUM</span>
-                        </div>
-                        <h5 className="premium-card-title">Ready to Get Started?</h5>
-                        <p className="premium-text">
-                          Join thousands of teachers who showcase their skills with premium videos
-                        </p>
-                        <button 
-                          className="btn btn-premium"
-                          onClick={() => {
-                            setPremiumData(prev => ({
-                              ...prev,
-                              mail: user?.email || ''
-                            }));
-                            setShowPremiumModal(true);
-                          }}
-                        >
-                          <i className="bi bi-star-fill me-2"></i>
-                          Get Premium
-                        </button>
-                      </div>
-                    </div>
-                  )}
+        {/* Benefits Section */}
+        <div className="benefits-section mb-5">
+          <h4 className="section-title">
+            <i className="bi bi-check-circle me-2"></i>
+            Premium Benefits
+          </h4>
+          <div className="row">
+            <div className="col-md-6">
+              <div className="benefit-item">
+                <i className="bi bi-camera-video text-primary"></i>
+                <div>
+                  <h6>Live Teaching Showcase</h6>
+                  <p className="text-muted mb-0">Let students see your actual teaching style</p>
+                </div>
+              </div>
+              <div className="benefit-item">
+                <i className="bi bi-person-lines-fill text-primary"></i>
+                <div>
+                  <h6>Direct Contact Sharing</h6>
+                  <p className="text-muted mb-0">Share contact details through your videos</p>
+                </div>
+              </div>
+              <div className="benefit-item">
+                <i className="bi bi-lightning-charge text-primary"></i>
+                <div>
+                  <h6>Instant Connections</h6>
+                  <p className="text-muted mb-0">Students can contact you immediately</p>
                 </div>
               </div>
             </div>
-          )}
+            <div className="col-md-6">
+              <div className="benefit-item">
+                <i className="bi bi-graph-up-arrow text-primary"></i>
+                <div>
+                  <h6>Increased Visibility</h6>
+                  <p className="text-muted mb-0">Stand out from other teachers</p>
+                </div>
+              </div>
+              <div className="benefit-item">
+                <i className="bi bi-heart text-primary"></i>
+                <div>
+                  <h6>Build Trust</h6>
+                  <p className="text-muted mb-0">Show your personality and teaching method</p>
+                </div>
+              </div>
+              <div className="benefit-item">
+                <i className="bi bi-currency-dollar text-primary"></i>
+                <div>
+                  <h6>More Students</h6>
+                  <p className="text-muted mb-0">Attract more students to your classes</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Current Status */}
+        {teacherPremiumStatus ? (
+          <div className="current-status mb-5">
+            <div className={`status-card ${teacherPremiumStatus.ispaid ? 'premium-active' : 'premium-pending'}`}>
+              <div className="status-header">
+                <div className="status-icon">
+                  <i className={`bi ${teacherPremiumStatus.ispaid ? 'bi-check-circle-fill' : 'bi-clock-fill'}`}></i>
+                </div>
+                <div>
+                  <h5 className="status-title">
+                    {teacherPremiumStatus.ispaid ? 'Premium Active' : 'Premium Pending'}
+                  </h5>
+                  <p className="status-subtitle">
+                    {teacherPremiumStatus.ispaid 
+                      ? 'Your premium subscription is active and videos are visible to students'
+                      : 'Your premium request is pending approval'
+                    }
+                  </p>
+                </div>
+              </div>
+              
+              {/* Show videos preview */}
+              <div className="videos-preview mt-4">
+                <h6 className="videos-title">Your Teaching Videos</h6>
+                <div className="row">
+                  {[0, 1, 2].map((index) => (
+                    <div key={index} className="col-md-4 mb-3">
+                      {renderVideoPreview(teacherPremiumStatus, index)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Add Content Button for paid users */}
+              {teacherPremiumStatus.ispaid && (
+                <div className="text-center mt-3">
+                  <button 
+                    className="btn btn-outline-primary"
+                    onClick={() => {
+                      setPremiumData(prev => ({
+                        ...prev,
+                        mail: user?.email || '',
+                        link1: teacherPremiumStatus.link1 || '',
+                        link2: teacherPremiumStatus.link2 || '',
+                        link3: teacherPremiumStatus.link3 || '',
+                        link_or_video: teacherPremiumStatus.link_or_video
+                      }));
+                      setShowPremiumModal(true);
+                    }}
+                  >
+                    <i className="bi bi-pencil me-2"></i>
+                    Update Videos
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="cta-section text-center">
+            <div className="premium-card">
+              <div className="premium-badge">
+                <i className="bi bi-gem"></i>
+                <span>PREMIUM</span>
+              </div>
+              <h5 className="premium-card-title">Ready to Get Started?</h5>
+              <p className="premium-text">
+                Join thousands of teachers who showcase their skills with premium videos
+              </p>
+              <button 
+  type="button" 
+  className="btn btn-premium"
+  onClick={handlePremiumSubmit}
+  disabled={premiumLoading}
+>
+  {premiumLoading ? (
+    <>
+      <span className="spinner-border spinner-border-sm me-2"></span>
+      Processing...
+    </>
+  ) : (
+    <>
+      <i className="bi bi-credit-card me-2"></i>
+      {teacherPremiumStatus?.ispaid ? 'Update Content' : 'Pay £49 & Get Premium'}
+    </>
+  )}
+</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
           {/* Connection Requests Tab */}
           {activeTab === 'requests' && (
@@ -1535,6 +1681,203 @@ const TeacherDashboard = () => {
       )}
 
       {/* Existing modals continue here... */}
+      {showPostModal && (
+  <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+    <div className="modal-dialog modal-lg">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h5 className="modal-title">
+            <i className="bi bi-book me-2"></i>
+            {editingPost ? 'Edit Teaching Post' : 'Create New Teaching Post'}
+          </h5>
+          <button 
+            type="button" 
+            className="btn-close" 
+            onClick={() => {
+              setShowPostModal(false);
+              resetPostForm();
+            }}
+            disabled={loading}
+          ></button>
+        </div>
+        <form onSubmit={handlePostSubmit}>
+          <div className="modal-body">
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label className="form-label">Headline *</label>
+                <input 
+                  type="text" 
+                  className="form-control"
+                  value={postForm.headline}
+                  onChange={(e) => setPostForm(prev => ({ ...prev, headline: e.target.value }))}
+                  placeholder="e.g., Mathematics Tutoring for GCSE Students"
+                  required
+                />
+              </div>
+              <div className="col-md-6 mb-3">
+                <label className="form-label">Subject *</label>
+                <select 
+                  className="form-select"
+                  value={postForm.subject}
+                  onChange={(e) => setPostForm(prev => ({ ...prev, subject: e.target.value }))}
+                  required
+                >
+                  <option value="">Select Subject</option>
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="Physics">Physics</option>
+                  <option value="Chemistry">Chemistry</option>
+                  <option value="Biology">Biology</option>
+                  <option value="English">English</option>
+                  <option value="History">History</option>
+                  <option value="Geography">Geography</option>
+                  <option value="Computer Science">Computer Science</option>
+                  <option value="Economics">Economics</option>
+                  <option value="Business Studies">Business Studies</option>
+                  <option value="Art">Art</option>
+                  <option value="Music">Music</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label className="form-label">Lesson Type *</label>
+                <select 
+                  className="form-select"
+                  value={postForm.lessonType}
+                  onChange={(e) => setPostForm(prev => ({ ...prev, lessonType: e.target.value }))}
+                  required
+                >
+                  <option value="in-person">In-Person Only</option>
+                  <option value="online">Online Only</option>
+                  <option value="both">Both Online & In-Person</option>
+                </select>
+              </div>
+              <div className="col-md-6 mb-3">
+                <label className="form-label">Price Type *</label>
+                <select 
+                  className="form-select"
+                  value={postForm.priceType}
+                  onChange={(e) => setPostForm(prev => ({ ...prev, priceType: e.target.value }))}
+                  required
+                >
+                  <option value="hourly">Per Hour</option>
+                  <option value="lesson">Per Lesson</option>
+                  <option value="weekly">Per Week</option>
+                  <option value="monthly">Per Month</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <label className="form-label">Price (£) *</label>
+                <input 
+                  type="number" 
+                  className="form-control"
+                  value={postForm.price}
+                  onChange={(e) => setPostForm(prev => ({ ...prev, price: e.target.value }))}
+                  placeholder="25"
+                  min="1"
+                  step="0.01"
+                  required
+                />
+              </div>
+              {(postForm.lessonType === 'in-person' || postForm.lessonType === 'both') && (
+                <div className="col-md-6 mb-3">
+                  <label className="form-label">Travel Distance (km)</label>
+                  <select 
+                    className="form-select"
+                    value={postForm.distanceFromLocation}
+                    onChange={(e) => setPostForm(prev => ({ ...prev, distanceFromLocation: parseInt(e.target.value) }))}
+                  >
+                    <option value={5}>5 km</option>
+                    <option value={10}>10 km</option>
+                    <option value={15}>15 km</option>
+                    <option value={20}>20 km</option>
+                    <option value={25}>25 km</option>
+                    <option value={50}>50 km</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {(postForm.lessonType === 'in-person' || postForm.lessonType === 'both') && (
+              <div className="row">
+                <div className="col-md-6 mb-3">
+                  <label className="form-label">Location</label>
+                  <input 
+                    type="text" 
+                    className="form-control"
+                    value={postForm.location}
+                    onChange={(e) => setPostForm(prev => ({ ...prev, location: e.target.value }))}
+                    placeholder="e.g., London, Manchester"
+                  />
+                </div>
+                <div className="col-md-6 mb-3">
+                  <label className="form-label">Town/District</label>
+                  <input 
+                    type="text" 
+                    className="form-control"
+                    value={postForm.townOrDistrict}
+                    onChange={(e) => setPostForm(prev => ({ ...prev, townOrDistrict: e.target.value }))}
+                    placeholder="e.g., Camden, City Centre"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="mb-3">
+              <label className="form-label">Description *</label>
+              <textarea 
+                className="form-control"
+                rows="4"
+                value={postForm.description}
+                onChange={(e) => setPostForm(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Describe your teaching experience, methodology, and what students can expect..."
+                required
+              ></textarea>
+              <small className="form-text text-muted">
+                Include your experience, teaching style, and what makes you unique as a tutor.
+              </small>
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button 
+              type="button" 
+              className="btn btn-secondary" 
+              onClick={() => {
+                setShowPostModal(false);
+                resetPostForm();
+              }}
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              className="btn btn-primary"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2"></span>
+                  {editingPost ? 'Updating...' : 'Creating...'}
+                </>
+              ) : (
+                <>
+                  <i className={`bi ${editingPost ? 'bi-pencil' : 'bi-plus-lg'} me-2`}></i>
+                  {editingPost ? 'Update Post' : 'Create Post'}
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+)}
       {/* (Post Modal, Profile Modal, Request Details Modal - keeping the existing code) */}
 
       <style jsx>{`
@@ -2660,6 +3003,69 @@ const TeacherDashboard = () => {
         .video-preview-container {
           animation: slideIn 0.3s ease-out;
         }
+          .pricing-section {
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0;
+}
+
+.pricing-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 15px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+.pricing-header {
+  margin-bottom: 1.5rem;
+}
+
+.pricing-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.pricing-price {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.price-amount {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.price-period {
+  font-size: 1rem;
+  opacity: 0.8;
+}
+
+.pricing-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+}
+
+.pricing-features li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.pricing-features li:last-child {
+  border-bottom: none;
+}
+
+.pricing-features i {
+  color: #10b981;
+}
       `}</style>
     </div>
   );

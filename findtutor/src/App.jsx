@@ -17,6 +17,9 @@ import './App.css'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import VideoPlayer from './components/videoPlayer'
 import HelpCenter from './components/helpCenter'
+import Success from './components/stripr/success'
+import Cancel from './components/stripr/cancel'
+import PremiumSuccess from './components/stripr/premiumSucess'
 
 // Protected Route component
 const ProtectedRoute = ({ children, requiredRole }) => {
@@ -58,6 +61,9 @@ const AppContent = () => {
             <Route path="/register/teacher" element={<TeacherAuth />} />
             <Route path="/video-demo" element={<VideoPlayer />} />
             <Route path="/help" element={<HelpCenter />} />
+            <Route path="/success" element={<Success />} />
+            <Route path="/cancel" element={<Cancel />} />
+            <Route path="/premium-success" element={<PremiumSuccess />} />
             <Route
               path="/dashboard/teacher"
               element={
