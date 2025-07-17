@@ -20,6 +20,9 @@ import HelpCenter from './components/helpCenter'
 import Success from './components/stripr/success'
 import Cancel from './components/stripr/cancel'
 import PremiumSuccess from './components/stripr/premiumSucess'
+import StudentPremiumSuccess from './components/stripr/studentPremiumSuccess'
+import AdminDashboard from './components/dashboard/adminDashboard'
+import AdminAuth from './components/auth/adminAuth'
 
 // Protected Route component
 const ProtectedRoute = ({ children, requiredRole }) => {
@@ -56,6 +59,7 @@ const AppContent = () => {
             <Route path="/find-teachers" element={<FindTeachers />} />
             <Route path="/student-posts" element={<StudentPosts />} />
             <Route path="/login/student" element={<StudentAuth />} />
+             <Route path="/login/admin" element={<AdminAuth />} />
             <Route path="/login/teacher" element={<TeacherAuth />} />
             <Route path="/register/student" element={<StudentAuth />} />
             <Route path="/register/teacher" element={<TeacherAuth />} />
@@ -64,6 +68,8 @@ const AppContent = () => {
             <Route path="/success" element={<Success />} />
             <Route path="/cancel" element={<Cancel />} />
             <Route path="/premium-success" element={<PremiumSuccess />} />
+            <Route path="/student-premium-success" element={<StudentPremiumSuccess />} />
+             <Route path="/admin" element={<AdminDashboard />} />
             <Route
               path="/dashboard/teacher"
               element={

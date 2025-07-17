@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 
-const STRIPE_SERVER_URL = 'http://localhost:4242';
+const STRIPE_SERVER_URL = 'http://82.25.180.10:4242';
 const POCKETBASE_URL = 'http://127.0.0.1:8090';
 
 const PremiumSuccess = () => {

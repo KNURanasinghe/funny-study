@@ -29,7 +29,7 @@ const Success = () => {
 
       try {
         // First, verify the payment status with Stripe
-        const paymentResponse = await axios.get(`http://localhost:4242/check-payment/${sessionId}`);
+        const paymentResponse = await axios.get(`http://82.25.180.10:4242/check-payment/${sessionId}`);
         
         if (paymentResponse.data.paymentStatus !== 'paid') {
           setError('Payment not completed');

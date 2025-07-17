@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import {loadStripe} from '@stripe/stripe-js';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -29,12 +30,19 @@ const StudentDashboard = () => {
     descripton: '',
     ispayed: false
   });
+
+  const [studentPremiumStatus, setStudentPremiumStatus] = useState({
+    hasPremium: false,
+    isPaid: false,
+    premiumData: null
+  });
   
   const [validationErrors, setValidationErrors] = useState({});
   const [premiumErrors, setPremiumErrors] = useState({});
 
   const API_BASE_URL = 'http://82.25.180.10:5000'; // Adjust this to match your backend URL
   const POCKETBASE_URL = 'http://127.0.0.1:8090';
+  const STRIPE_SERVER_URL = 'http://82.25.180.10:4242';
 
   useEffect(() => {
     // Check if user is logged in and is a student
@@ -67,6 +75,11 @@ const StudentDashboard = () => {
     if (user && (user.id || user.studentId)) {
       loadProfileData();
     }
+
+    // Load student premium status
+    if (user?.email) {
+      loadStudentPremiumStatus();
+    }
   }, [user, navigate]);
 
   const loadProfileData = async () => {
@@ -98,6 +111,18 @@ const StudentDashboard = () => {
       console.error('Error loading profile:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadStudentPremiumStatus = async () => {
+    try {
+      const response = await fetch(`${STRIPE_SERVER_URL}/check-student-premium-status/${encodeURIComponent(user.email)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setStudentPremiumStatus(data);
+      }
+    } catch (error) {
+      console.error('Error loading student premium status:', error);
     }
   };
 
@@ -240,47 +265,50 @@ const StudentDashboard = () => {
     try {
       setPremiumLoading(true);
       
-      const response = await fetch(`${POCKETBASE_URL}/api/collections/findtitor_premium_student/records`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          subject: premiumData.subject,
+      // Use the exact same stripe key as teacher dashboard
+      const stripe = await loadStripe('pk_test_51RlPFJPLqHqCP926lPQTDC69S32MQE5V01FtJvFlSLeRGCRzkC3EsH5TGLFTD4UExjtnlUfWoHjUPzmgQaSl86lU00VX8NqTZa');
+      
+      const body = {
+        studentData: {
           email: premiumData.email,
+          subject: premiumData.subject,
           mobile: premiumData.mobile,
           topix: premiumData.topix,
           descripton: premiumData.descripton,
-          ispayed: true
-        }),
+        }
+      };
+
+      const headers = {
+        "Content-Type": "application/json"
+      };
+
+      console.log('Sending student premium request:', body);
+
+      const response = await fetch(`${STRIPE_SERVER_URL}/create-student-premium-checkout-session`, {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(body)
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log('Premium subscription successful:', result);
-        
-        // Show success message
-        alert('🎉 Premium subscription request submitted successfully! We will contact you soon.');
-        
-        // Close modal and reset form
-        setShowPremiumModal(false);
-        setPremiumData({
-          subject: '',
-          email: user?.email || '',
-          mobile: '',
-          topix: '',
-          descripton: '',
-          ispayed: false
-        });
-        setPremiumErrors({});
-      } else {
+      if (!response.ok) {
         const errorData = await response.json();
-        console.error('Premium subscription failed:', errorData);
-        alert('Failed to submit premium subscription. Please try again.');
+        throw new Error(errorData.error || 'Failed to create student premium checkout session');
       }
+
+      const session = await response.json();
+      console.log('Student checkout session created:', session.id);
+
+      const result = await stripe.redirectToCheckout({
+        sessionId: session.id
+      });
+
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+
     } catch (error) {
-      console.error('Network error:', error);
-      alert('Network error. Please check your connection and try again.');
+      console.error('Student premium payment error:', error);
+      alert(error.message || 'Failed to initiate premium payment');
     } finally {
       setPremiumLoading(false);
     }
@@ -336,6 +364,12 @@ const StudentDashboard = () => {
           </div>
           <h5>{profileData.name || user?.name || 'Student Name'}</h5>
           <p className="text-muted">Student</p>
+          {studentPremiumStatus.hasPremium && studentPremiumStatus.isPaid && (
+            <span className="badge bg-warning text-dark">
+              <i className="bi bi-star-fill me-1"></i>
+              Premium Member
+            </span>
+          )}
         </div>
 
         <ul className="nav flex-column">
@@ -523,112 +557,134 @@ const StudentDashboard = () => {
             <div className="card">
               <div className="card-body">
                 <div className="subscription-content">
-                  {/* Header */}
-                  <div className="text-center mb-5">
-                    <div className="subscription-icon mb-3">
-                      <i className="bi bi-star-fill"></i>
+                  {/* Premium Status Banner */}
+                  {studentPremiumStatus.hasPremium && studentPremiumStatus.isPaid ? (
+                    <div className="alert alert-success d-flex align-items-center mb-4">
+                      <i className="bi bi-check-circle-fill fs-3 me-3"></i>
+                      <div>
+                        <h5 className="alert-heading mb-1">🎉 You're a Premium Member!</h5>
+                        <p className="mb-0">Enjoy 2 free lessons per month and access to premium teachers.</p>
+                        {/* {studentPremiumStatus.premiumData && (
+                          <small className="text-muted">
+                            Premium since: {new Date(studentPremiumStatus.premiumData.paymentDate).toLocaleDateString()}
+                          </small>
+                        )} */}
+                      </div>
                     </div>
-                    <h3 className="subscription-title">Premium Learning Experience</h3>
-                    <p className="subscription-subtitle text-muted">
-                      Unlock the full potential of your learning journey
-                    </p>
-                  </div>
-
-                  {/* Why Subscription Section */}
-                  <div className="why-subscription mb-5">
-                    <h4 className="section-title">
-                      <i className="bi bi-question-circle me-2"></i>
-                      Why subscription is a good choice?
-                    </h4>
-                    <div className="subscription-description">
-                      <p>
-                        Are you looking for the best teacher for <strong>maths, science, biology, chemistry, physics, or computer science?</strong> 
-                        There are many teachers for the subjects you need support. Do you want to find the best match?
-                      </p>
-                      <p>
-                        The student subscription allows you to join <strong>two free lessons per month</strong> which extend up to 
-                        <strong> two hours</strong>. You will be able to choose the best matching teacher without a payment. 
-                        If you are not satisfied with one teacher, you can join a free lesson with another teacher.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Benefits Section */}
-                  <div className="benefits-section mb-5">
-                    <h4 className="section-title">
-                      <i className="bi bi-check-circle me-2"></i>
-                      Premium Benefits
-                    </h4>
-                    <div className="row">
-                      <div className="col-md-6">
-                        <div className="benefit-item">
-                          <i className="bi bi-calendar-check text-primary"></i>
-                          <div>
-                            <h6>2 Free Lessons Monthly</h6>
-                            <p className="text-muted mb-0">Up to 2 hours of free tutoring each month</p>
-                          </div>
+                  ) : (
+                    <>
+                      {/* Header */}
+                      <div className="text-center mb-5">
+                        <div className="subscription-icon mb-3">
+                          <i className="bi bi-star-fill"></i>
                         </div>
-                        <div className="benefit-item">
-                          <i className="bi bi-people text-primary"></i>
-                          <div>
-                            <h6>Multiple Teacher Options</h6>
-                            <p className="text-muted mb-0">Try different teachers until you find your perfect match</p>
-                          </div>
+                        <h3 className="subscription-title">Premium Learning Experience</h3>
+                        <p className="subscription-subtitle text-muted">
+                          Unlock the full potential of your learning journey
+                        </p>
+                      </div>
+
+                      {/* Why Subscription Section */}
+                      <div className="why-subscription mb-5">
+                        <h4 className="section-title">
+                          <i className="bi bi-question-circle me-2"></i>
+                          Why subscription is a good choice?
+                        </h4>
+                        <div className="subscription-description">
+                          <p>
+                            Are you looking for the best teacher for <strong>maths, science, biology, chemistry, physics, or computer science?</strong> 
+                            There are many teachers for the subjects you need support. Do you want to find the best match?
+                          </p>
+                          <p>
+                            The student subscription allows you to join <strong>two free lessons per month</strong> which extend up to 
+                            <strong> two hours</strong>. You will be able to choose the best matching teacher without a payment. 
+                            If you are not satisfied with one teacher, you can join a free lesson with another teacher.
+                          </p>
                         </div>
-                        <div className="benefit-item">
-                          <i className="bi bi-shield-check text-primary"></i>
-                          <div>
-                            <h6>Quality Guarantee</h6>
-                            <p className="text-muted mb-0">All teachers are verified and highly qualified</p>
+                      </div>
+
+                      {/* Benefits Section */}
+                      <div className="benefits-section mb-5">
+                        <h4 className="section-title">
+                          <i className="bi bi-check-circle me-2"></i>
+                          Premium Benefits
+                        </h4>
+                        <div className="row">
+                          <div className="col-md-6">
+                            <div className="benefit-item">
+                              <i className="bi bi-calendar-check text-primary"></i>
+                              <div>
+                                <h6>2 Free Lessons Monthly</h6>
+                                <p className="text-muted mb-0">Up to 2 hours of free tutoring each month</p>
+                              </div>
+                            </div>
+                            <div className="benefit-item">
+                              <i className="bi bi-people text-primary"></i>
+                              <div>
+                                <h6>Multiple Teacher Options</h6>
+                                <p className="text-muted mb-0">Try different teachers until you find your perfect match</p>
+                              </div>
+                            </div>
+                            <div className="benefit-item">
+                              <i className="bi bi-shield-check text-primary"></i>
+                              <div>
+                                <h6>Quality Guarantee</h6>
+                                <p className="text-muted mb-0">All teachers are verified and highly qualified</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="col-md-6">
+                            <div className="benefit-item">
+                              <i className="bi bi-book text-primary"></i>
+                              <div>
+                                <h6>All Subjects Available</h6>
+                                <p className="text-muted mb-0">Math, Science, Biology, Chemistry, Physics, Computer Science</p>
+                              </div>
+                            </div>
+                            <div className="benefit-item">
+                              <i className="bi bi-clock text-primary"></i>
+                              <div>
+                                <h6>Flexible Scheduling</h6>
+                                <p className="text-muted mb-0">Book lessons at your convenient time</p>
+                              </div>
+                            </div>
+                            <div className="benefit-item">
+                              <i className="bi bi-chat-dots text-primary"></i>
+                              <div>
+                                <h6>Direct Communication</h6>
+                                <p className="text-muted mb-0">Chat directly with your selected teachers</p>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                      <div className="col-md-6">
-                        <div className="benefit-item">
-                          <i className="bi bi-book text-primary"></i>
-                          <div>
-                            <h6>All Subjects Available</h6>
-                            <p className="text-muted mb-0">Math, Science, Biology, Chemistry, Physics, Computer Science</p>
-                          </div>
-                        </div>
-                        <div className="benefit-item">
-                          <i className="bi bi-clock text-primary"></i>
-                          <div>
-                            <h6>Flexible Scheduling</h6>
-                            <p className="text-muted mb-0">Book lessons at your convenient time</p>
-                          </div>
-                        </div>
-                        <div className="benefit-item">
-                          <i className="bi bi-chat-dots text-primary"></i>
-                          <div>
-                            <h6>Direct Communication</h6>
-                            <p className="text-muted mb-0">Chat directly with your selected teachers</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* CTA Section */}
-                  <div className="cta-section text-center">
-                    <div className="premium-card">
-                      <div className="premium-badge">
-                        <i className="bi bi-gem"></i>
-                        <span>PREMIUM</span>
+                      {/* CTA Section */}
+                      <div className="cta-section text-center">
+                        <div className="premium-card">
+                          <div className="premium-badge">
+                            <i className="bi bi-gem"></i>
+                            <span>PREMIUM</span>
+                          </div>
+                          <h5 className="premium-title">Ready to Get Started?</h5>
+                          <p className="premium-text">
+                            Join thousands of students who have found their perfect learning match
+                          </p>
+                          <div className="pricing-info mb-3">
+                            <span className="price-amount">£29</span>
+                            <span className="price-period">/month</span>
+                          </div>
+                          <button 
+                            className="btn btn-premium"
+                            onClick={() => setShowPremiumModal(true)}
+                          >
+                            <i className="bi bi-star-fill me-2"></i>
+                            Get Premium Now
+                          </button>
+                        </div>
                       </div>
-                      <h5 className="premium-title">Ready to Get Started?</h5>
-                      <p className="premium-text">
-                        Join thousands of students who have found their perfect learning match
-                      </p>
-                      <button 
-                        className="btn btn-premium"
-                        onClick={() => setShowPremiumModal(true)}
-                      >
-                        <i className="bi bi-star-fill me-2"></i>
-                        Get Premium
-                      </button>
-                    </div>
-                  </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -654,6 +710,11 @@ const StudentDashboard = () => {
                 ></button>
               </div>
               <div className="modal-body">
+                <div className="premium-pricing-info text-center mb-4">
+                  <div className="h2 text-primary">£29 <small className="text-muted fs-6">/month</small></div>
+                  <p className="text-muted">Cancel anytime • 2 free lessons monthly</p>
+                </div>
+                
                 <div className="row">
                   <div className="col-md-6">
                     <div className="mb-3">
@@ -741,6 +802,17 @@ const StudentDashboard = () => {
                     </div>
                   </div>
                 </div>
+                
+                <div className="payment-security-info mt-3">
+                  <div className="alert alert-info d-flex align-items-center">
+                    <i className="bi bi-shield-check fs-4 me-3"></i>
+                    <div>
+                      <small className="fw-bold">Secure Payment</small>
+                      <br />
+                      <small className="text-muted">Your payment is processed securely by Stripe. We don't store your payment information.</small>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="modal-footer">
                 <button 
@@ -751,24 +823,24 @@ const StudentDashboard = () => {
                 >
                   Cancel
                 </button>
-                <button 
-                  type="button" 
-                  className="btn btn-premium"
-                  onClick={handlePremiumSubmit}
-                  disabled={premiumLoading}
-                >
-                  {premiumLoading ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2"></span>
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      <i className="bi bi-star-fill me-2"></i>
-                      Submit Premium Request
-                    </>
-                  )}
-                </button>
+                  <button 
+                    type="button" 
+                    className="btn btn-premium"
+                    onClick={handlePremiumSubmit}
+                    disabled={premiumLoading}
+                  >
+                    {premiumLoading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-credit-card me-2"></i>
+                        Pay £29 with Stripe
+                      </>
+                    )}
+                  </button>
               </div>
             </div>
           </div>
@@ -964,6 +1036,20 @@ const StudentDashboard = () => {
           opacity: 0.9;
         }
 
+        .pricing-info {
+          margin-bottom: 1.5rem;
+        }
+
+        .price-amount {
+          font-size: 2.5rem;
+          font-weight: 700;
+        }
+
+        .price-period {
+          font-size: 1rem;
+          opacity: 0.8;
+        }
+
         .btn-premium {
           background: white;
           color: #667eea;
@@ -1019,6 +1105,18 @@ const StudentDashboard = () => {
         .modal-footer {
           border-top: 1px solid #f0f0f0;
           padding: 1rem 2rem;
+        }
+
+        .premium-pricing-info {
+          background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+          padding: 1.5rem;
+          border-radius: 10px;
+          border: 1px solid #e2e8f0;
+        }
+
+        .payment-security-info .alert {
+          border-radius: 10px;
+          margin-bottom: 0;
         }
 
         .spinner-border-sm {

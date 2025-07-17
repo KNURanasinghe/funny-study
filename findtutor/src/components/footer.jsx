@@ -74,16 +74,17 @@ const Footer = () => {
 
     setIsLoading(true);
 
-    try {
-      const response = await fetch('http://127.0.0.1:8090/api/collections/findtutor_subcriptions/records', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          field: email.trim()
-        }),
-      });
+   try {
+  const response = await fetch('http://82.25.180.10:4242/api/collections/findtutor_subcriptions/records/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      field: email.trim()  // Make sure this matches what your backend expects
+    }),
+  });
+
 
       if (response.ok) {
         const result = await response.json();

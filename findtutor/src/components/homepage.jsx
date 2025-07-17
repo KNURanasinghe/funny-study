@@ -248,16 +248,16 @@ const handleUserTypeSelect = (userType) => {
            <h4 
               className="text-white fw-bold mb-2"
               style={{
-                fontSize: '1.3rem',
+                fontSize: '4.7rem',
                 textShadow: '0 0 20px rgba(255,255,255,0.8), 0 0 30px rgba(255,255,255,0.6), 0 0 40px rgba(255,255,255,0.4)',
                 animation: 'glow 2s ease-in-out infinite alternate'
               }}
             >
               <i className="bi bi-check-circle-fill text-success me-2"></i>
-              Always 100% FREE
+              100% FREE
               <i className="bi bi-check-circle-fill text-success ms-2"></i>
             </h4>
-            <p className="text-white opacity-90 mb-2">No hidden fees • No credit card required</p>
+            <p className="text-white opacity-90 mb-4">No hidden fees • No credit card required</p>
           
           <div className="d-flex flex-wrap gap-3">
             <button 

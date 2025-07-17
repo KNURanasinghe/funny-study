@@ -177,23 +177,39 @@ const TeacherDashboard = () => {
     }
   }, [activeTab, user]);
 
-  const fetchPremiumStatus = async () => {
-    try {
-      const teacherEmail = user?.email;
-      if (!teacherEmail) return;
-
-      const response = await fetch(`${POCKETBASE_URL}/api/collections/findtutor_premium_teachers/records?filter=(mail='${teacherEmail}')`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.items && data.items.length > 0) {
-          setTeacherPremiumStatus(data.items[0]);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching premium status:', error);
+    const fetchPremiumStatus = async () => {
+  try {
+    const teacherEmail = user?.email;
+    if (!teacherEmail) {
+      console.warn('No teacher email available');
+      return;
     }
-  };
+
+    // Fixed URL - using the endpoint structure you showed in your router
+    const response = await fetch(
+      `http://82.25.180.10:4242/api/collections/findtutor_premium_teachers/records/status/${encodeURIComponent(teacherEmail)}`
+    );
+
+    // Check both response.ok and content-type
+    if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) {
+      const errorText = await response.text();
+      throw new Error(`Server returned ${response.status}: ${errorText.substring(0, 100)}`);
+    }
+
+    const data = await response.json();
+
+    // Handle the response format your backend actually returns
+    if (data.hasPremium) {
+      setTeacherPremiumStatus(data.premiumData);
+    } else {
+      setTeacherPremiumStatus(null);
+    }
+
+  } catch (error) {
+    console.error('Error fetching premium status:', error);
+    // Optional: Set some error state to show to the user
+  }
+};
 
   const fetchPosts = async () => {
     try {
@@ -364,7 +380,7 @@ const TeacherDashboard = () => {
       "Content-Type": "application/json"
     };
 
-    const response = await fetch("http://localhost:4242/create-premium-checkout-session", {
+    const response = await fetch("http://82.25.180.10:4242/create-premium-checkout-session", {
       method: "POST",
       headers: headers,
       body: JSON.stringify(body)
@@ -411,60 +427,132 @@ const submitPremiumContent = async (contentData) => {
   try {
     const teacherEmail = user?.email;
     
-    if (contentData.link_or_video) {
-      // Submit with YouTube links
-      const response = await fetch('http://localhost:4242/update-premium-content', {
+    if (!teacherEmail) {
+      console.error('Teacher email not found');
+      return;
+    }
+
+    console.log('Submitting content data:', contentData);
+    
+    if (contentData.link_or_video === true) {
+      // Submit with YouTube links via backend
+      const payload = {
+        teacherEmail: teacherEmail,
+        contentData: {
+          link_or_video: true,
+          link1: contentData.link1 || '',
+          link2: contentData.link2 || '',
+          link3: contentData.link3 || ''
+        }
+      };
+
+      console.log('Sending payload to backend:', payload);
+
+      const response = await fetch('http://82.25.180.10:4242/update-premium-content', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          teacherEmail: teacherEmail,
-          contentData: {
-            link_or_video: true,
-            link1: contentData.link1,
-            link2: contentData.link2,
-            link3: contentData.link3,
-          }
-        }),
+        body: JSON.stringify(payload),
       });
+
+      const responseData = await response.json();
+      console.log('Backend response:', responseData);
 
       if (response.ok) {
         console.log('Premium content with links submitted successfully');
         fetchPremiumStatus();
       } else {
-        console.error('Failed to submit premium content with links');
+        console.error('Failed to submit premium content with links:', responseData);
+        alert(`Error: ${responseData.error || 'Unknown error'}`);
       }
+      
     } else {
       // Submit with video files directly to PocketBase
-      const formData = new FormData();
-      formData.append('link_or_video', false);
-      if (contentData.video1) formData.append('video1', contentData.video1);
-      if (contentData.video2) formData.append('video2', contentData.video2);
-      if (contentData.video3) formData.append('video3', contentData.video3);
-
-      // First get the existing record ID
-      const checkResponse = await fetch(`${POCKETBASE_URL}/api/collections/findtutor_premium_teachers/records?filter=(mail='${teacherEmail}')`);
-      const checkData = await checkResponse.json();
+      console.log('Uploading videos directly to PocketBase');
       
-      if (checkData.items && checkData.items.length > 0) {
-        const recordId = checkData.items[0].id;
+      try {
+        // First get the existing record ID
+        const encodedEmail = encodeURIComponent(teacherEmail);
+        const checkResponse = await fetch(
+          `${POCKETBASE_URL}/api/collections/findtutor_premium_teachers/records?filter=(mail='${teacherEmail}')`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              // Add authentication if required by your PocketBase setup
+              // 'Authorization': `Bearer ${YOUR_TOKEN}` // uncomment if needed
+            }
+          }
+        );
         
-        const response = await fetch(`${POCKETBASE_URL}/api/collections/findtutor_premium_teachers/records/${recordId}`, {
-          method: 'PATCH',
-          body: formData,
-        });
-
-        if (response.ok) {
-          console.log('Premium content with videos submitted successfully');
-          fetchPremiumStatus();
-        } else {
-          console.error('Failed to upload videos');
+        if (!checkResponse.ok) {
+          throw new Error(`Failed to fetch record: ${checkResponse.status}`);
         }
+        
+        const checkData = await checkResponse.json();
+        console.log('Check data:', checkData);
+        
+        if (checkData.items && checkData.items.length > 0) {
+          const recordId = checkData.items[0].id;
+          console.log('Found record ID:', recordId);
+          
+          // Prepare FormData
+          const formData = new FormData();
+          formData.append('link_or_video', 'false'); // PocketBase expects string
+          
+          if (contentData.video1) {
+            console.log('Adding video1:', contentData.video1.name);
+            formData.append('video1', contentData.video1);
+          }
+          if (contentData.video2) {
+            console.log('Adding video2:', contentData.video2.name);
+            formData.append('video2', contentData.video2);
+          }
+          if (contentData.video3) {
+            console.log('Adding video3:', contentData.video3.name);
+            formData.append('video3', contentData.video3);
+          }
+
+          // Log FormData contents for debugging
+          for (let [key, value] of formData.entries()) {
+            console.log(`FormData: ${key}:`, value);
+          }
+          
+          const uploadResponse = await fetch(
+            `${POCKETBASE_URL}/api/collections/findtutor_premium_teachers/records/${recordId}`,
+            {
+              method: 'PATCH',
+              body: formData,
+              // Don't set Content-Type header for FormData - let browser set it
+              headers: {
+                // Add authentication if required
+                // 'Authorization': `Bearer ${YOUR_TOKEN}` // uncomment if needed
+              }
+            }
+          );
+
+          const uploadData = await uploadResponse.json();
+          console.log('Upload response:', uploadData);
+
+          if (uploadResponse.ok) {
+            console.log('Premium content with videos submitted successfully');
+            fetchPremiumStatus();
+          } else {
+            console.error('Failed to upload videos:', uploadData);
+            alert(`Upload failed: ${uploadData.message || 'Unknown error'}`);
+          }
+        } else {
+          console.error('No premium record found for teacher');
+          alert('Premium record not found');
+        }
+      } catch (directUploadError) {
+        console.error('Direct upload error:', directUploadError);
+        alert(`Upload error: ${directUploadError.message}`);
       }
     }
   } catch (error) {
     console.error('Content submission error:', error);
+    alert(`Submission error: ${error.message}`);
   }
 };
 
@@ -575,7 +663,7 @@ const handlePurchaseContact = async (requestId) => {
       "Content-Type": "application/json"
     };
 
-    const response = await fetch("http://localhost:4242/create-checkout-session", {
+    const response = await fetch("http://82.25.180.10:4242/create-checkout-session", {
       method: "POST",
       headers: headers,
       body: JSON.stringify(body)

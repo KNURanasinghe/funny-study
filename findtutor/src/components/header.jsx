@@ -347,6 +347,15 @@ const Header = () => {
                             minWidth: '160px'
                           }}
                         >
+                           <Link 
+                            className="dropdown-item rounded-2 d-flex align-items-center gap-2 py-2"
+                            to="/login/admin"
+                            onClick={() => setShowLoginDropdown(false)}
+                            style={{ margin: '4px 8px' }}
+                          >
+                            <i className="bi bi-person text-success"></i>
+                            Admin
+                          </Link>
                           <Link 
                             className="dropdown-item rounded-2 d-flex align-items-center gap-2 py-2"
                             to="/login/student"
