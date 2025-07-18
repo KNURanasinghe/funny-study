@@ -553,142 +553,258 @@ const StudentDashboard = () => {
             </div>
           )}
 
-          {activeTab === 'subscriptions' && (
-            <div className="card">
-              <div className="card-body">
-                <div className="subscription-content">
-                  {/* Premium Status Banner */}
-                  {studentPremiumStatus.hasPremium && studentPremiumStatus.isPaid ? (
-                    <div className="alert alert-success d-flex align-items-center mb-4">
-                      <i className="bi bi-check-circle-fill fs-3 me-3"></i>
-                      <div>
-                        <h5 className="alert-heading mb-1">🎉 You're a Premium Member!</h5>
-                        <p className="mb-0">Enjoy 2 free lessons per month and access to premium teachers.</p>
-                        {/* {studentPremiumStatus.premiumData && (
-                          <small className="text-muted">
-                            Premium since: {new Date(studentPremiumStatus.premiumData.paymentDate).toLocaleDateString()}
-                          </small>
-                        )} */}
+          
+{activeTab === 'subscriptions' && (
+  <div className="card">
+    <div className="card-body">
+      <div className="subscription-content">
+        {/* Premium Status Banner */}
+        {studentPremiumStatus.hasPremium && studentPremiumStatus.isPaid ? (
+          <div className="current-status mb-5">
+            <div className="status-card premium-active">
+              <div className="status-header">
+                <div className="status-icon">
+                  <i className="bi bi-check-circle-fill"></i>
+                </div>
+                <div>
+                  <h5 className="status-title">
+                    Premium Active 
+                    <span className="verified-badge ms-2">
+                      <i className="bi bi-patch-check-fill"></i>
+                      Verified
+                    </span>
+                  </h5>
+                  <p className="status-subtitle">
+                    Your premium subscription is active with all features unlocked
+                  </p>
+                </div>
+              </div>
+              
+              {/* Premium Features Status */}
+              <div className="premium-features-status mt-4">
+                <div className="row">
+                  <div className="col-md-3">
+                    <div className="feature-status-card">
+                      <div className="feature-icon">
+                        <i className="bi bi-patch-check-fill"></i>
                       </div>
+                      <h6>Verified Badge</h6>
+                      <span className="status-active">Active</span>
                     </div>
-                  ) : (
-                    <>
-                      {/* Header */}
-                      <div className="text-center mb-5">
-                        <div className="subscription-icon mb-3">
-                          <i className="bi bi-star-fill"></i>
-                        </div>
-                        <h3 className="subscription-title">Premium Learning Experience</h3>
-                        <p className="subscription-subtitle text-muted">
-                          Unlock the full potential of your learning journey
-                        </p>
+                  </div>
+                  <div className="col-md-3">
+                    <div className="feature-status-card">
+                      <div className="feature-icon">
+                        <i className="bi bi-infinity"></i>
                       </div>
+                      <h6>Unlimited Posts</h6>
+                      <span className="status-active">Active</span>
+                    </div>
+                  </div>
+                  <div className="col-md-3">
+                    <div className="feature-status-card">
+                      <div className="feature-icon">
+                        <i className="bi bi-person-lines-fill"></i>
+                      </div>
+                      <h6>Direct Contact</h6>
+                      <span className="status-active">Visible</span>
+                    </div>
+                  </div>
+                  <div className="col-md-3">
+                    <div className="feature-status-card">
+                      <div className="feature-icon">
+                        <i className="bi bi-calendar-check"></i>
+                      </div>
+                      <h6>Free Sessions</h6>
+                      <span className="status-active">2/month</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-                      {/* Why Subscription Section */}
-                      <div className="why-subscription mb-5">
-                        <h4 className="section-title">
-                          <i className="bi bi-question-circle me-2"></i>
-                          Why subscription is a good choice?
-                        </h4>
-                        <div className="subscription-description">
-                          <p>
-                            Are you looking for the best teacher for <strong>maths, science, biology, chemistry, physics, or computer science?</strong> 
-                            There are many teachers for the subjects you need support. Do you want to find the best match?
-                          </p>
-                          <p>
-                            The student subscription allows you to join <strong>two free lessons per month</strong> which extend up to 
-                            <strong> two hours</strong>. You will be able to choose the best matching teacher without a payment. 
-                            If you are not satisfied with one teacher, you can join a free lesson with another teacher.
-                          </p>
-                        </div>
-                      </div>
+              {/* Free Sessions Usage */}
+              <div className="free-sessions-tracker mt-4">
+                <h6 className="sessions-title">
+                  <i className="bi bi-calendar-check me-2"></i>
+                  Free Trial Sessions This Month
+                </h6>
+                <div className="sessions-container">
+                  <div className="sessions-progress">
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '50%'}}></div>
+                    </div>
+                    <div className="sessions-text">
+                      <span className="sessions-used">1</span> of <span className="sessions-total">2</span> sessions used
+                    </div>
+                  </div>
+                  <div className="next-reset">
+                    <small className="text-muted">Resets in 15 days</small>
+                  </div>
+                </div>
+              </div>
 
-                      {/* Benefits Section */}
-                      <div className="benefits-section mb-5">
-                        <h4 className="section-title">
-                          <i className="bi bi-check-circle me-2"></i>
-                          Premium Benefits
-                        </h4>
-                        <div className="row">
-                          <div className="col-md-6">
-                            <div className="benefit-item">
-                              <i className="bi bi-calendar-check text-primary"></i>
-                              <div>
-                                <h6>2 Free Lessons Monthly</h6>
-                                <p className="text-muted mb-0">Up to 2 hours of free tutoring each month</p>
-                              </div>
-                            </div>
-                            <div className="benefit-item">
-                              <i className="bi bi-people text-primary"></i>
-                              <div>
-                                <h6>Multiple Teacher Options</h6>
-                                <p className="text-muted mb-0">Try different teachers until you find your perfect match</p>
-                              </div>
-                            </div>
-                            <div className="benefit-item">
-                              <i className="bi bi-shield-check text-primary"></i>
-                              <div>
-                                <h6>Quality Guarantee</h6>
-                                <p className="text-muted mb-0">All teachers are verified and highly qualified</p>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="col-md-6">
-                            <div className="benefit-item">
-                              <i className="bi bi-book text-primary"></i>
-                              <div>
-                                <h6>All Subjects Available</h6>
-                                <p className="text-muted mb-0">Math, Science, Biology, Chemistry, Physics, Computer Science</p>
-                              </div>
-                            </div>
-                            <div className="benefit-item">
-                              <i className="bi bi-clock text-primary"></i>
-                              <div>
-                                <h6>Flexible Scheduling</h6>
-                                <p className="text-muted mb-0">Book lessons at your convenient time</p>
-                              </div>
-                            </div>
-                            <div className="benefit-item">
-                              <i className="bi bi-chat-dots text-primary"></i>
-                              <div>
-                                <h6>Direct Communication</h6>
-                                <p className="text-muted mb-0">Chat directly with your selected teachers</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+              {/* Quick Actions */}
+              <div className="text-center mt-4">
+                <button className="btn btn-outline-primary me-2">
+                  <i className="bi bi-calendar-plus me-2"></i>
+                  Book Free Session
+                </button>
+                <button className="btn btn-outline-success">
+                  <i className="bi bi-gear me-2"></i>
+                  Manage Subscription
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Header */}
+            <div className="text-center mb-5">
+              <div className="subscription-icon mb-3">
+                <i className="bi bi-star-fill"></i>
+              </div>
+              <h3 className="subscription-title">Premium Learning Experience</h3>
+              <p className="subscription-subtitle text-muted">
+                Get verified, unlimited posts, and free trial sessions
+              </p>
+            </div>
 
-                      {/* CTA Section */}
-                      <div className="cta-section text-center">
-                        <div className="premium-card">
-                          <div className="premium-badge">
-                            <i className="bi bi-gem"></i>
-                            <span>PREMIUM</span>
-                          </div>
-                          <h5 className="premium-title">Ready to Get Started?</h5>
-                          <p className="premium-text">
-                            Join thousands of students who have found their perfect learning match
-                          </p>
-                          <div className="pricing-info mb-3">
-                            <span className="price-amount">£29</span>
-                            <span className="price-period">/month</span>
-                          </div>
-                          <button 
-                            className="btn btn-premium"
-                            onClick={() => setShowPremiumModal(true)}
-                          >
-                            <i className="bi bi-star-fill me-2"></i>
-                            Get Premium Now
-                          </button>
-                        </div>
-                      </div>
-                    </>
-                  )}
+            {/* Premium Pricing */}
+            <div className="pricing-section mb-5">
+              <div className="pricing-card">
+                <div className="pricing-header">
+                  <h4 className="pricing-title">Premium Subscription</h4>
+                  <div className="pricing-price">
+                    <span className="price-amount">£29</span>
+                    <span className="price-period">per month</span>
+                  </div>
+                </div>
+                <ul className="pricing-features">
+                  <li><i className="bi bi-check-circle-fill me-2"></i>Verified Student Badge</li>
+                  <li><i className="bi bi-check-circle-fill me-2"></i>Unlimited Posts</li>
+                  <li><i className="bi bi-check-circle-fill me-2"></i>Direct Contact Visibility</li>
+                  <li><i className="bi bi-check-circle-fill me-2"></i>2 Free Trial Sessions/Month</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Why Subscription Section */}
+            <div className="why-subscription mb-5">
+              <h4 className="section-title">
+                <i className="bi bi-question-circle me-2"></i>
+                Why subscription is a good choice?
+              </h4>
+              <div className="subscription-description">
+                <p>
+                  Get a <strong>verified student badge</strong> that builds trust with teachers. Create <strong>unlimited posts</strong> 
+                  for all the subjects you need help with - math, science, biology, chemistry, physics, or computer science.
+                </p>
+                <p>
+                  Teachers can see your <strong>contact information directly</strong> on your profile for immediate connections. 
+                  Plus, enjoy <strong>2 free trial sessions per month</strong> to find the perfect teacher match without any payment!
+                </p>
+              </div>
+            </div>
+
+            {/* Benefits Section */}
+            <div className="benefits-section mb-5">
+              <h4 className="section-title">
+                <i className="bi bi-check-circle me-2"></i>
+                Premium Benefits
+              </h4>
+              <div className="row">
+                <div className="col-md-6">
+                  <div className="benefit-item">
+                    <i className="bi bi-patch-check text-primary"></i>
+                    <div>
+                      <h6>Verified Student Badge</h6>
+                      <p className="text-muted mb-0">Build trust with an official verification badge</p>
+                    </div>
+                  </div>
+                  <div className="benefit-item">
+                    <i className="bi bi-infinity text-primary"></i>
+                    <div>
+                      <h6>Unlimited Posts</h6>
+                      <p className="text-muted mb-0">Create as many learning requests as you need</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="benefit-item">
+                    <i className="bi bi-person-lines-fill text-primary"></i>
+                    <div>
+                      <h6>Direct Contact Visibility</h6>
+                      <p className="text-muted mb-0">Teachers can contact you immediately without barriers</p>
+                    </div>
+                  </div>
+                  <div className="benefit-item">
+                    <i className="bi bi-calendar-check text-primary"></i>
+                    <div>
+                      <h6>2 Free Trial Sessions/Month</h6>
+                      <p className="text-muted mb-0">Try different teachers until you find your perfect match</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          )}
+
+            {/* How It Works Section */}
+            <div className="how-it-works mb-5">
+              <h4 className="section-title">
+                <i className="bi bi-lightbulb me-2"></i>
+                How Free Trial Sessions Work
+              </h4>
+              <div className="row">
+                <div className="col-md-4">
+                  <div className="step-card">
+                    <div className="step-number">1</div>
+                    <h6>Browse Teachers</h6>
+                    <p className="text-muted">Find qualified teachers for your subject</p>
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="step-card">
+                    <div className="step-number">2</div>
+                    <h6>Book Free Session</h6>
+                    <p className="text-muted">Use one of your 2 monthly free sessions</p>
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="step-card">
+                    <div className="step-number">3</div>
+                    <h6>Continue or Try Another</h6>
+                    <p className="text-muted">Found your match? Great! Or try another teacher</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA Section */}
+            <div className="cta-section text-center">
+              <div className="premium-card">
+                <div className="premium-badge">
+                  <i className="bi bi-gem"></i>
+                  <span>PREMIUM</span>
+                </div>
+                <h5 className="premium-title">Ready to Get Started?</h5>
+                <p className="premium-text">
+                  Join thousands of verified students with unlimited learning opportunities
+                </p>
+                <button 
+                  className="btn btn-premium"
+                  onClick={() => setShowPremiumModal(true)}
+                >
+                  <i className="bi bi-credit-card me-2"></i>
+                  Pay £29 & Get Premium
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  </div>
+)}
         </div>
       </main>
 
@@ -848,6 +964,8 @@ const StudentDashboard = () => {
       )}
 
       <style jsx>{`
+
+      
         .dashboard-container {
           display: flex;
           min-height: 100vh;
@@ -1164,7 +1282,303 @@ const StudentDashboard = () => {
           .modal-footer {
             padding: 1rem;
           }
+            
         }
+          .verified-badge {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 15px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.current-status {
+  margin: 2rem 0;
+}
+
+.status-card {
+  padding: 2rem;
+  border-radius: 15px;
+  border: 2px solid #e5e7eb;
+}
+
+.status-card.premium-active {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border-color: #10b981;
+}
+
+.status-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.status-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  background: #10b981;
+  color: white;
+}
+
+.status-title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.status-subtitle {
+  margin: 0;
+  opacity: 0.8;
+}
+
+.premium-features-status {
+  background: rgba(255, 255, 255, 0.6);
+  padding: 1.5rem;
+  border-radius: 10px;
+  margin-top: 1rem;
+}
+
+.feature-status-card {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.feature-icon {
+  font-size: 1.5rem;
+  color: #10b981;
+  margin-bottom: 0.5rem;
+}
+
+.feature-status-card h6 {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.status-active {
+  background: #d1fae5;
+  color: #065f46;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.free-sessions-tracker {
+  background: rgba(255, 255, 255, 0.6);
+  padding: 1.5rem;
+  border-radius: 10px;
+  margin-top: 1rem;
+}
+
+.sessions-title {
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.sessions-container {
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.sessions-progress {
+  margin-bottom: 1rem;
+}
+
+.progress-bar {
+  background: #e5e7eb;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.sessions-text {
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.sessions-used {
+  font-weight: 600;
+  color: #10b981;
+}
+
+.sessions-total {
+  font-weight: 600;
+}
+
+.next-reset {
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+.pricing-section {
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0;
+}
+
+.pricing-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 15px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+.pricing-header {
+  margin-bottom: 1.5rem;
+}
+
+.pricing-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.pricing-price {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.price-amount {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.price-period {
+  font-size: 1rem;
+  opacity: 0.8;
+}
+
+.pricing-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+}
+
+.pricing-features li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 0.95rem;
+}
+
+.pricing-features li:last-child {
+  border-bottom: none;
+}
+
+.pricing-features i {
+  color: #10b981;
+  font-size: 1rem;
+}
+
+.how-it-works {
+  background: #f8f9fa;
+  padding: 2rem;
+  border-radius: 15px;
+  border: 1px solid #e9ecef;
+}
+
+.step-card {
+  text-align: center;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  height: 100%;
+}
+
+.step-number {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  margin: 0 auto 1rem auto;
+}
+
+.step-card h6 {
+  margin-bottom: 0.5rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.step-card p {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* Responsive updates for student dashboard */
+@media (max-width: 768px) {
+  .premium-features-status {
+    padding: 1rem;
+  }
+  
+  .feature-status-card {
+    margin-bottom: 0.5rem;
+  }
+  
+  .free-sessions-tracker {
+    padding: 1rem;
+  }
+  
+  .sessions-container {
+    padding: 0.75rem;
+  }
+  
+  .verified-badge {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    display: block;
+    margin-top: 0.5rem;
+  }
+
+  .status-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+
+  .how-it-works {
+    padding: 1.5rem;
+  }
+
+  .step-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
       `}</style>
     </div>
   );

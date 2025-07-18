@@ -652,7 +652,7 @@ const FindTeachers = () => {
                       <option value="">All Types</option>
                       <option value="online">Online</option>
                       <option value="in-person">In-Person</option>
-                      <option value="both">Both</option>
+                      {/* <option value="both">Both</option> */}
                     </select>
                   </div>
                 </div>

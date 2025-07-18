@@ -132,21 +132,21 @@ const handleUserTypeSelect = (userType) => {
       id: 1,
       author: 'Sophia Garcia',
       role: 'Student, Psychology',
-      content: 'EduLink completely transformed my learning experience. I found a perfect tutor who helped me improve my grades dramatically in just two months!',
+      content: 'Funny Study completely transformed my learning experience. I found a perfect tutor who helped me improve my grades dramatically in just two months!',
       image: '/api/placeholder/100/100'
     },
     {
       id: 2,
       author: 'James Wilson',
       role: 'Math Teacher',
-      content: 'As a teacher, EduLink has allowed me to connect with motivated students and share my passion for mathematics. The platform is intuitive and professional.',
+      content: 'As a teacher, Funny Study has allowed me to connect with motivated students and share my passion for mathematics. The platform is intuitive and professional.',
       image: '/api/placeholder/100/100'
     },
     {
       id: 3,
       author: 'Emma Thompson',
       role: 'Parent',
-      content: 'Finding a qualified tutor for my daughter was so easy with EduLink. The verification process gave me confidence, and the results speak for themselves!',
+      content: 'Finding a qualified tutor for my daughter was so easy with Funny Study. The verification process gave me confidence, and the results speak for themselves!',
       image: '/api/placeholder/100/100'
     }
   ];
@@ -257,7 +257,9 @@ const handleUserTypeSelect = (userType) => {
               100% FREE
               <i className="bi bi-check-circle-fill text-success ms-2"></i>
             </h4>
-            <p className="text-white opacity-90 mb-4">No hidden fees • No credit card required</p>
+            <p className="text-white opacity-90 mb-2 bi bi-check text-success  ">  Registration</p>
+            <p className="text-white opacity-90 mb-2 bi bi-check text-success  ">	Adding posts </p>
+            <p className="text-white opacity-90 mb-4 bi bi-check text-success  ">  Getting in touch with verified teachers & students</p>
           
           <div className="d-flex flex-wrap gap-3">
             <button 
@@ -284,10 +286,10 @@ const handleUserTypeSelect = (userType) => {
               className="btn btn-outline-light btn-lg px-4 py-3 rounded-pill fw-semibold"
               onClick={() => navigate("/student-posts")}
               style={{
-                transition: 'all 0.3s ease',
-                backdropFilter: 'blur(10px)',
-                background: 'rgba(255,255,255,0.1)',
-                border: '2px solid rgba(255,255,255,0.3)'
+                 transition: 'all 0.3s ease',
+                boxShadow: '0 4px 15px rgba(255,255,255,0.2)',
+                background:'white',
+                color:'black'
               }}
               onMouseEnter={(e) => {
                 e.target.style.transform = 'translateY(-3px)';
@@ -598,7 +600,7 @@ const handleUserTypeSelect = (userType) => {
             
             {/* Step 3 */}
             <div className="col-md-4">
-              <div className="card h-100 border-0 shadow-sm rounded-3 p-4 text-center transition" style={{ transform: 'translateY(0)', transition: 'transform 0.3s ease' }}>
+              <div className="card h-100 border-0 shadow-sm rounded-3 p-4 text-center transition" onClick={()=>navigate('/about')} style={{ transform: 'translateY(0)', transition: 'transform 0.3s ease' }}>
                 <div className="text-center mb-3">
                   <div className="bg-primary text-white rounded-circle p-3 d-inline-flex">
                     <i className="bi bi-award-fill fs-4"></i>
@@ -613,10 +615,26 @@ const handleUserTypeSelect = (userType) => {
           </div>
           
           <div className="mt-5 text-center">
-            <button className="btn btn-primary btn-lg" onClick={() => navigate('/register/teacher')}>
-              Get Started Now
-              <i className="bi bi-arrow-right ms-2"></i>
-            </button>
+            <button 
+            className="btn btn-light  bg-primary btn-lg rounded-pill px-4 fw-semibold"
+            style={{
+              boxShadow: '0 4px 15px rgba(255,255,255,0.2)',
+              transition: 'all 0.3s ease',
+              
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 6px 20px rgba(255,255,255,0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 4px 15px rgba(255,255,255,0.2)';
+            }}
+            onClick={() => navigate('/register/student')}
+          >
+            <i className="bi bi-person-plus me-2"></i>
+            Get Started Now
+          </button>
           </div>
         </div>
       </section>
@@ -877,17 +895,18 @@ const handleUserTypeSelect = (userType) => {
             Get Started Now
           </button>
           <button 
-            className="btn btn-outline-light btn-lg rounded-pill px-4 fw-semibold"
+            className="btn btn-light btn-lg rounded-pill px-4 fw-semibold"
             style={{
+              boxShadow: '0 4px 15px rgba(255,255,255,0.2)',
               transition: 'all 0.3s ease'
             }}
             onMouseEnter={(e) => {
-              e.target.style.background = 'rgba(255,255,255,0.1)';
               e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 6px 20px rgba(255,255,255,0.3)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.background = 'transparent';
               e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 4px 15px rgba(255,255,255,0.2)';
             }}
             onClick={()=>navigate('/video-demo')}
           >

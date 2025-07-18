@@ -1047,16 +1047,16 @@ const handlePurchaseContact = async (requestId) => {
             <div className="pricing-header">
               <h4 className="pricing-title">Premium Subscription</h4>
               <div className="pricing-price">
-                <span className="price-amount">£49</span>
-                <span className="price-period">one-time</span>
+                <span className="price-amount">£29</span>
+                <span className="price-period">per-month</span>
               </div>
             </div>
-            <ul className="pricing-features">
-              <li><i className="bi bi-check-circle-fill me-2"></i>3 Teaching Video Showcase</li>
-              <li><i className="bi bi-check-circle-fill me-2"></i>Direct Contact Sharing</li>
-              <li><i className="bi bi-check-circle-fill me-2"></i>Premium Badge</li>
-              <li><i className="bi bi-check-circle-fill me-2"></i>Higher Visibility</li>
-              <li><i className="bi bi-check-circle-fill me-2"></i>Priority Listing</li>
+           <ul className="pricing-features">
+              <li><i className="bi bi-check-circle-fill me-2"></i>Verified Teacher Badge</li>
+              <li><i className="bi bi-check-circle-fill me-2"></i>Unlimited Posts</li>
+              <li><i className="bi bi-check-circle-fill me-2"></i>Direct Contact Visibility</li>
+              <li><i className="bi bi-check-circle-fill me-2"></i>3 Teaching Video Clips</li>
+              <li><i className="bi bi-check-circle-fill me-2"></i>Teaching Resources Space</li>
             </ul>
           </div>
         </div>

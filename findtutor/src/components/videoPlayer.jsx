@@ -279,18 +279,19 @@ const VideoPlayer = () => {
                     Find Teachers
                   </button>
                   <button 
-                    className="btn btn-outline-light btn-lg rounded-pill px-4"
-                    onClick={() => navigate('/student-posts')}
+                    className="btn btn-primary btn-lg rounded-pill px-4"
+                    onClick={() => navigate('/find-teachers')}
                     style={{
+                      boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
                       transition: 'all 0.3s ease'
                     }}
                     onMouseEnter={(e) => {
-                      e.target.style.background = 'rgba(255,255,255,0.1)';
                       e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.6)';
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.background = 'transparent';
                       e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
                     }}
                   >
                     <i className="bi bi-people me-2"></i>
