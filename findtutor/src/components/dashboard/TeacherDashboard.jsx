@@ -1217,7 +1217,7 @@ const handlePurchaseContact = async (requestId) => {
   ) : (
     <>
       <i className="bi bi-credit-card me-2"></i>
-      {teacherPremiumStatus?.ispaid ? 'Update Content' : 'Pay £49 & Get Premium'}
+      {teacherPremiumStatus?.ispaid ? 'Update Content' : 'Pay £29 & Get Premium'}
     </>
   )}
 </button>

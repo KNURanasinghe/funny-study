@@ -1,5 +1,3 @@
-// COMPLETE FIXED VERSION - Replace your entire component with this:
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
@@ -8,6 +6,91 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 const API_BASE_URL = 'http://82.25.180.10:5000/api';
+
+// Country codes mapping
+const countryPhoneCodes = {
+  'United States': '+1',
+  'United Kingdom': '+44',
+  'Canada': '+1',
+  'Australia': '+61',
+  'Germany': '+49',
+  'France': '+33',
+  'Spain': '+34',
+  'Italy': '+39',
+  'Netherlands': '+31',
+  'India': '+91',
+  'Singapore': '+65',
+  'Sri Lanka': '+94',
+  'Afghanistan': '+93',
+  'Albania': '+355',
+  'Algeria': '+213',
+  'Argentina': '+54',
+  'Armenia': '+374',
+  'Austria': '+43',
+  'Bangladesh': '+880',
+  'Belgium': '+32',
+  'Brazil': '+55',
+  'Bulgaria': '+359',
+  'Cambodia': '+855',
+  'Chile': '+56',
+  'China': '+86',
+  'Colombia': '+57',
+  'Croatia': '+385',
+  'Czech Republic': '+420',
+  'Denmark': '+45',
+  'Egypt': '+20',
+  'Estonia': '+372',
+  'Finland': '+358',
+  'Ghana': '+233',
+  'Greece': '+30',
+  'Hungary': '+36',
+  'Indonesia': '+62',
+  'Iran': '+98',
+  'Iraq': '+964',
+  'Ireland': '+353',
+  'Israel': '+972',
+  'Japan': '+81',
+  'Jordan': '+962',
+  'Kazakhstan': '+7',
+  'Kenya': '+254',
+  'Kuwait': '+965',
+  'Latvia': '+371',
+  'Lebanon': '+961',
+  'Lithuania': '+370',
+  'Luxembourg': '+352',
+  'Malaysia': '+60',
+  'Maldives': '+960',
+  'Mexico': '+52',
+  'Morocco': '+212',
+  'Myanmar': '+95',
+  'Nepal': '+977',
+  'New Zealand': '+64',
+  'Nigeria': '+234',
+  'Norway': '+47',
+  'Pakistan': '+92',
+  'Philippines': '+63',
+  'Poland': '+48',
+  'Portugal': '+351',
+  'Qatar': '+974',
+  'Romania': '+40',
+  'Russia': '+7',
+  'Saudi Arabia': '+966',
+  'Serbia': '+381',
+  'Slovakia': '+421',
+  'Slovenia': '+386',
+  'South Africa': '+27',
+  'South Korea': '+82',
+  'Sweden': '+46',
+  'Switzerland': '+41',
+  'Thailand': '+66',
+  'Turkey': '+90',
+  'Ukraine': '+380',
+  'United Arab Emirates': '+971',
+  'Uruguay': '+598',
+  'Venezuela': '+58',
+  'Vietnam': '+84',
+  'Zimbabwe': '+263'
+};
 
 const TeacherAuth = () => {
   const { login } = useAuth();
@@ -23,59 +106,83 @@ const TeacherAuth = () => {
     confirmPassword: '',
     phoneNumber: '',
     cityOrTown: '',
+    country: '',
     profilePhoto: null
   });
 
+  // New state for country code functionality
+  const [countryCode, setCountryCode] = useState('');
+  const [phoneWithoutCode, setPhoneWithoutCode] = useState('');
+
   const cityInputRef = useRef(null);
   const autocompleteRef = useRef(null);
+  const countryInputRef = useRef(null);
+  const countryAutocompleteRef = useRef(null);
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
-    useEffect(() => { window.scrollTo(0, 0); }, []);
+
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
+  // Update country code when country changes
+  useEffect(() => {
+    if (formData.country) {
+      const code = countryPhoneCodes[formData.country] || '';
+      setCountryCode(code);
+      
+      // Update the full phone number in formData
+      if (phoneWithoutCode) {
+        setFormData(prev => ({
+          ...prev,
+          phoneNumber: code + phoneWithoutCode
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          phoneNumber: code
+        }));
+      }
+    }
+  }, [formData.country, phoneWithoutCode]);
 
   useEffect(() => {
-  const loadGoogleMapsAPI = () => {
-    // Check if already loaded
-    if (window.google && window.google.maps && window.google.maps.places) {
-      setIsGoogleMapsLoaded(true);
-      return;
-    }
+    const loadGoogleMapsAPI = () => {
+      if (window.google && window.google.maps && window.google.maps.places) {
+        setIsGoogleMapsLoaded(true);
+        return;
+      }
 
-    // Check if script already exists
-    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
-    if (existingScript) {
-      return; // Don't load again
-    }
+      const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+      if (existingScript) {
+        return;
+      }
 
-    // Load without callback - simpler approach
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBRVAGSgYeCWuZW_Lhy5V_bdr_0Tv1Q5ys&libraries=places`;
-    script.async = true;
-    
-    script.onload = () => {
-      setTimeout(() => {
-        if (window.google && window.google.maps && window.google.maps.places) {
-          setIsGoogleMapsLoaded(true);
-        }
-      }, 100);
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyBRVAGSgYeCWuZW_Lhy5V_bdr_0Tv1Q5ys&libraries=places`;
+      script.async = true;
+      
+      script.onload = () => {
+        setTimeout(() => {
+          if (window.google && window.google.maps && window.google.maps.places) {
+            setIsGoogleMapsLoaded(true);
+          }
+        }, 100);
+      };
+      
+      document.head.appendChild(script);
     };
-    
-    document.head.appendChild(script);
-  };
 
-  loadGoogleMapsAPI();
-}, []);
+    loadGoogleMapsAPI();
+  }, []);
 
-  // 2. FIXED: Autocomplete initialization with better timing
+  // Initialize autocomplete for city
   useEffect(() => {
     if (isGoogleMapsLoaded && cityInputRef.current && !autocompleteRef.current && !isLogin) {
-      console.log('Attempting to initialize autocomplete...');
+      console.log('Attempting to initialize city autocomplete...');
       
-      // Add a longer delay to ensure everything is ready
       const initTimer = setTimeout(() => {
         if (cityInputRef.current && window.google?.maps?.places?.Autocomplete) {
           try {
-            console.log('Creating autocomplete instance...');
+            console.log('Creating city autocomplete instance...');
             
-            // Initialize autocomplete
             autocompleteRef.current = new window.google.maps.places.Autocomplete(
               cityInputRef.current,
               {
@@ -84,15 +191,13 @@ const TeacherAuth = () => {
               }
             );
 
-            // Listen for place selection
             autocompleteRef.current.addListener('place_changed', () => {
               const place = autocompleteRef.current.getPlace();
-              console.log('Place selected:', place);
+              console.log('City place selected:', place);
               
               if (place && (place.name || place.formatted_address)) {
                 let cityName = place.name || place.formatted_address;
                 
-                // Try to get better city name from address components
                 if (place.address_components) {
                   const cityComponent = place.address_components.find(
                     component => 
@@ -103,11 +208,22 @@ const TeacherAuth = () => {
                   if (cityComponent) {
                     cityName = cityComponent.long_name;
                   }
+
+                  // Auto-detect country from city selection
+                  const countryComponent = place.address_components.find(
+                    component => component.types.includes('country')
+                  );
+                  if (countryComponent) {
+                    setFormData(prev => ({
+                      ...prev,
+                      cityOrTown: cityName,
+                      country: countryComponent.long_name
+                    }));
+                    return;
+                  }
                 }
 
                 console.log('Setting city name:', cityName);
-                
-                // Update form data
                 setFormData(prev => ({
                   ...prev,
                   cityOrTown: cityName
@@ -115,29 +231,68 @@ const TeacherAuth = () => {
               }
             });
 
-            console.log('Autocomplete initialized successfully');
+            console.log('City autocomplete initialized successfully');
           } catch (error) {
-            console.error('Error creating autocomplete:', error);
+            console.error('Error creating city autocomplete:', error);
           }
-        } else {
-          console.error('Google Maps API not ready yet');
         }
-      }, 500); // Increased delay
+      }, 500);
 
-      // Cleanup timer
-      return () => {
-        clearTimeout(initTimer);
-      };
+      return () => clearTimeout(initTimer);
     }
 
-    // Cleanup autocomplete
     return () => {
       if (autocompleteRef.current && window.google?.maps?.event) {
         try {
           window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
           autocompleteRef.current = null;
         } catch (error) {
-          console.error('Error cleaning up autocomplete:', error);
+          console.error('Error cleaning up city autocomplete:', error);
+        }
+      }
+    };
+  }, [isGoogleMapsLoaded, isLogin]);
+
+  // Initialize autocomplete for country
+  useEffect(() => {
+    if (isGoogleMapsLoaded && countryInputRef.current && !countryAutocompleteRef.current && !isLogin) {
+      const initTimer = setTimeout(() => {
+        if (countryInputRef.current && window.google?.maps?.places?.Autocomplete) {
+          try {
+            countryAutocompleteRef.current = new window.google.maps.places.Autocomplete(
+              countryInputRef.current,
+              {
+                types: ['country'],
+                fields: ['name', 'address_components']
+              }
+            );
+
+            countryAutocompleteRef.current.addListener('place_changed', () => {
+              const place = countryAutocompleteRef.current.getPlace();
+              
+              if (place && place.name) {
+                setFormData(prev => ({
+                  ...prev,
+                  country: place.name
+                }));
+              }
+            });
+          } catch (error) {
+            console.error('Error creating country autocomplete:', error);
+          }
+        }
+      }, 500);
+
+      return () => clearTimeout(initTimer);
+    }
+
+    return () => {
+      if (countryAutocompleteRef.current && window.google?.maps?.event) {
+        try {
+          window.google.maps.event.clearInstanceListeners(countryAutocompleteRef.current);
+          countryAutocompleteRef.current = null;
+        } catch (error) {
+          console.error('Error cleaning up country autocomplete:', error);
         }
       }
     };
@@ -153,6 +308,46 @@ const TeacherAuth = () => {
       ...prev,
       [name]: type === 'file' ? files[0] : value
     }));
+  };
+
+  // Handle phone number change with country code logic
+  const handlePhoneChange = (e) => {
+    const value = e.target.value;
+    
+    // Remove any non-digit characters except + at the beginning
+    const cleanedValue = value.replace(/[^\d+]/g, '');
+    
+    // If user manually types a country code, extract it
+    if (cleanedValue.startsWith('+')) {
+      const match = cleanedValue.match(/^(\+\d{1,4})(.*)$/);
+      if (match) {
+        const [, code, number] = match;
+        setCountryCode(code);
+        setPhoneWithoutCode(number);
+        
+        // Find the country that matches this code
+        const matchingCountry = Object.entries(countryPhoneCodes).find(([, phoneCode]) => phoneCode === code);
+        if (matchingCountry && matchingCountry[0] !== formData.country) {
+          setFormData(prev => ({
+            ...prev,
+            country: matchingCountry[0],
+            phoneNumber: cleanedValue
+          }));
+        } else {
+          setFormData(prev => ({
+            ...prev,
+            phoneNumber: cleanedValue
+          }));
+        }
+      }
+    } else {
+      // If no country code, use the current country code
+      setPhoneWithoutCode(cleanedValue);
+      setFormData(prev => ({
+        ...prev,
+        phoneNumber: countryCode + cleanedValue
+      }));
+    }
   };
 
   const handleLogin = async () => {
@@ -172,6 +367,7 @@ const TeacherAuth = () => {
       email: response.data.teacher.email,
       phoneNumber: response.data.teacher.phoneNumber,
       cityOrTown: response.data.teacher.cityOrTown,
+      country: response.data.teacher.country,
       profilePhoto: response.data.teacher.profilePhoto,
       role: 'teacher'
     };
@@ -198,11 +394,14 @@ const TeacherAuth = () => {
     registerData.append('email', formData.email);
     registerData.append('password', formData.password);
     
-    if (formData.phoneNumber) {
+    if (formData.phoneNumber && formData.phoneNumber !== countryCode) {
       registerData.append('phoneNumber', formData.phoneNumber);
     }
     if (formData.cityOrTown) {
       registerData.append('cityOrTown', formData.cityOrTown);
+    }
+    if (formData.country) {
+      registerData.append('country', formData.country);
     }
     if (formData.profilePhoto) {
       registerData.append('profilePhoto', formData.profilePhoto);
@@ -222,6 +421,7 @@ const TeacherAuth = () => {
       email: teacherData.email,
       phoneNumber: teacherData.phoneNumber,
       cityOrTown: teacherData.cityOrTown,
+      country: teacherData.country,
       profilePhoto: teacherData.profilePhoto,
       role: 'teacher'
     };
@@ -250,7 +450,6 @@ const TeacherAuth = () => {
     }
   };
 
-  // 3. FIXED: CSS styles using regular style tag instead of jsx
   const styles = `
     .auth-card {
       border: none;
@@ -282,6 +481,24 @@ const TeacherAuth = () => {
       color: #0d6efd;
     }
 
+    .country-code-display {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 8px 0 0 8px;
+      padding: 12px 15px;
+      color: #0d6efd;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      min-width: 80px;
+      justify-content: center;
+    }
+
+    .phone-input-with-code {
+      border-radius: 0 8px 8px 0;
+      border-left: none;
+    }
+
     .auth-btn-primary {
       border-radius: 8px;
       padding: 12px 20px;
@@ -296,7 +513,6 @@ const TeacherAuth = () => {
       box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
     }
 
-    /* Google Places Autocomplete Dropdown Styling */
     .pac-container {
       background-color: white !important;
       border-radius: 8px !important;
@@ -469,27 +685,85 @@ const TeacherAuth = () => {
                       </div>
 
                       <div className="mb-3">
+                        <label htmlFor="country" className="form-label">
+                          Country <span className="text-danger">*</span>
+                        </label>
+                        <input
+                          ref={countryInputRef}
+                          type="text"
+                          className="form-control mb-2"
+                          id="country"
+                          name="country"
+                          value={formData.country}
+                          onChange={handleChange}
+                          placeholder="Start typing your country..."
+                          autoComplete="off"
+                          required
+                        />
+                        <div className="form-text mb-2">
+                          <i className="bi bi-info-circle me-1"></i>
+                          Start typing or select from dropdown below
+                        </div>
+                        
+                        <select
+                          className="form-select"
+                          value={formData.country}
+                          onChange={(e) => setFormData(prev => ({...prev, country: e.target.value}))}
+                        >
+                          <option value="">Or select from popular countries</option>
+                          <option value="United States">United States</option>
+                          <option value="United Kingdom">United Kingdom</option>
+                          <option value="Canada">Canada</option>
+                          <option value="Australia">Australia</option>
+                          <option value="Germany">Germany</option>
+                          <option value="France">France</option>
+                          <option value="Spain">Spain</option>
+                          <option value="Italy">Italy</option>
+                          <option value="Netherlands">Netherlands</option>
+                          <option value="India">India</option>
+                          <option value="Singapore">Singapore</option>
+                          <option value="Sri Lanka">Sri Lanka</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+
+                      <div className="mb-3">
                         <label htmlFor="phoneNumber" className="form-label">
                           Phone Number <span className="text-danger">*</span>
+                          {countryCode && (
+                            <span className="text-muted ms-2">({countryCode})</span>
+                          )}
                         </label>
-                        <div className="input-group auth-input-group">
-                          <span className="input-group-text auth-input-group-text">
-                            <i className="bi bi-telephone"></i>
-                          </span>
+                        <div className="input-group">
+                          {countryCode ? (
+                            <span className="country-code-display">
+                              {countryCode}
+                            </span>
+                          ) : (
+                            <span className="input-group-text auth-input-group-text">
+                              <i className="bi bi-telephone"></i>
+                            </span>
+                          )}
                           <input
                             type="tel"
-                            className="form-control auth-form-control"
+                            className={`form-control ${countryCode ? 'phone-input-with-code' : 'auth-form-control'}`}
                             id="phoneNumber"
                             name="phoneNumber"
-                            value={formData.phoneNumber}
-                            onChange={handleChange}
-                            placeholder="Enter your phone number"
+                            value={countryCode ? phoneWithoutCode : formData.phoneNumber}
+                            onChange={handlePhoneChange}
+                            placeholder={countryCode ? "Enter phone number" : "Select country first or enter with country code"}
                             required
                           />
                         </div>
+                        <div className="form-text">
+                          <i className="bi bi-info-circle me-1"></i>
+                          {countryCode 
+                            ? `Enter your phone number. Country code ${countryCode} will be added automatically.`
+                            : "Select your country first to automatically add the country code, or enter the full number with country code."
+                          }
+                        </div>
                       </div>
 
-                      {/* FIXED: City input with proper autocomplete */}
                       <div className="mb-3">
                         <label htmlFor="cityOrTown" className="form-label">
                           City or Town <span className="text-danger">*</span>
@@ -511,6 +785,10 @@ const TeacherAuth = () => {
                             autoComplete="off"
                           />
                         </div>
+                        <div className="form-text">
+                          <i className="bi bi-info-circle me-1"></i>
+                          Start typing to see city suggestions
+                        </div>
                       </div>
 
                       <div className="mb-3">
@@ -528,7 +806,7 @@ const TeacherAuth = () => {
                         />
                         <div className="form-text">
                           <i className="bi bi-info-circle me-1"></i>
-                          Optional: Upload a profile picture (Max 5MB, JPG, PNG, GIF)
+                          Upload a profile picture (Max 5MB, JPG, PNG, GIF)
                         </div>
                       </div>
                     </>

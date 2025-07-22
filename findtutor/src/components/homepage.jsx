@@ -4,6 +4,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import Header from './header';
 import Footer from './footer';
+import RegistrationSelectionModal from './RegisterModel';
 
 
 const EduLink = () => {
@@ -13,6 +14,16 @@ const EduLink = () => {
   const [activePage, setActivePage] = useState('home');
   const [isSticky, setIsSticky] = useState(false);
   const navigate = useNavigate();
+
+   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+
+    const handleGetStartedClick = () => {
+    setShowRegistrationModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowRegistrationModal(false);
+  };
 
     useEffect(() => { window.scrollTo(0, 0); }, []);
 // Add this state at the top of your component
@@ -132,21 +143,21 @@ const handleUserTypeSelect = (userType) => {
       id: 1,
       author: 'Sophia Garcia',
       role: 'Student, Psychology',
-      content: 'Funny Study completely transformed my learning experience. I found a perfect tutor who helped me improve my grades dramatically in just two months!',
+      content: 'Funny Study Learning completely transformed my learning experience. I found a perfect tutor who helped me improve my grades dramatically in just two months!',
       image: '/api/placeholder/100/100'
     },
     {
       id: 2,
       author: 'James Wilson',
       role: 'Math Teacher',
-      content: 'As a teacher, Funny Study has allowed me to connect with motivated students and share my passion for mathematics. The platform is intuitive and professional.',
+      content: 'As a teacher, Funny Study Learning has allowed me to connect with motivated students and share my passion for mathematics. The platform is intuitive and professional.',
       image: '/api/placeholder/100/100'
     },
     {
       id: 3,
       author: 'Emma Thompson',
       role: 'Parent',
-      content: 'Finding a qualified tutor for my daughter was so easy with Funny Study. The verification process gave me confidence, and the results speak for themselves!',
+      content: 'Finding a qualified tutor for my daughter was so easy with Funny Study Learning. The verification process gave me confidence, and the results speak for themselves!',
       image: '/api/placeholder/100/100'
     }
   ];
@@ -555,7 +566,7 @@ const handleUserTypeSelect = (userType) => {
       <section className="py-5 bg-white">
         <div className="container py-4">
           <div className="text-center mb-5">
-            <h2 className="display-5 fw-bold text-dark mb-3">How Funny Study Works</h2>
+            <h2 className="display-5 fw-bold text-dark mb-3">How Funny Study Learning Works</h2>
             <p className="lead text-muted mx-auto" style={{ maxWidth: '700px' }}>
               Our platform makes it simple to connect with teachers or students in just a few steps
             </p>
@@ -614,7 +625,7 @@ const handleUserTypeSelect = (userType) => {
             </div>
           </div>
           
-          <div className="mt-5 text-center">
+          {/* <div className="mt-5 text-center">
             <button 
             className="btn btn-light  bg-primary btn-lg rounded-pill px-4 fw-semibold"
             style={{
@@ -631,11 +642,124 @@ const handleUserTypeSelect = (userType) => {
               e.target.style.boxShadow = '0 4px 15px rgba(255,255,255,0.2)';
             }}
             onClick={() => navigate('/register/student')}
-          >
+            >
             <i className="bi bi-person-plus me-2"></i>
             Get Started Now
-          </button>
-          </div>
+            </button>
+          </div> */}
+          
+
+<div 
+  className="text-center mt-5 pt-4" 
+  style={{
+    background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%)',
+    borderRadius: '20px',
+    margin: '3rem 0',
+    position: 'relative',
+    overflow: 'hidden'
+  }}
+>
+  {/* Background decoration */}
+  <div 
+    className="position-absolute w-100 h-100" 
+    style={{
+      background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="30" cy="30" r="2"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+      backgroundSize: '30px 30px',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0
+    }}
+  ></div>
+  
+  <div 
+    className="d-inline-block rounded-4 p-4 position-relative" 
+    style={{
+      background: 'rgba(255, 255, 255, 0.1)',
+      backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(255, 255, 255, 0.2)',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+      marginBottom:'30px'
+    }}
+  >
+    <h4 
+      className="text-white fw-bold mb-3" 
+      style={{
+        textShadow: '0 2px 10px rgba(0, 0, 0, 0.3)',
+        fontSize: '1.75rem'
+      }}
+    >
+      Join Thousands of Happy Users
+    </h4>
+    <p 
+      className="text-white mb-4" 
+      style={{
+        opacity: 0.9,
+        textShadow: '0 1px 5px rgba(0, 0, 0, 0.2)',
+        fontSize: '1.1rem',
+        maxWidth: '500px',
+        margin: '0 auto 1.5rem auto'
+      }}
+    >
+      Start your learning journey today and become our next success story
+    </p>
+    <div className="d-flex flex-wrap gap-3 justify-content-center">
+      <button 
+        className="btn btn-light btn-lg rounded-pill px-4 fw-semibold"
+        style={{
+          boxShadow: '0 4px 15px rgba(255, 255, 255, 0.2)',
+          transition: 'all 0.3s ease',
+          border: 'none',
+          background: 'white',
+          color: '#495057'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.transform = 'translateY(-2px)';
+          e.target.style.boxShadow = '0 6px 20px rgba(255, 255, 255, 0.3)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.transform = 'translateY(0)';
+          e.target.style.boxShadow = '0 4px 15px rgba(255, 255, 255, 0.2)';
+        }}
+        onClick={handleGetStartedClick}
+      >
+        <i className="bi bi-person-plus me-2"></i>
+        Get Started Now
+      </button>
+      
+      <button 
+        className="btn btn-outline-light btn-lg rounded-pill px-4 fw-semibold"
+        style={{
+          boxShadow: '0 4px 15px rgba(255, 255, 255, 0.2)',
+          transition: 'all 0.3s ease',
+           background: 'white',
+          borderColor: 'rgba(255, 255, 255, 0.3)',
+          color: 'black'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.transform = 'translateY(-2px)';
+          e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+          e.target.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.transform = 'translateY(0)';
+          e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+          e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+        }}
+        onClick={() => navigate('/video-demo')}
+      >
+        <i className="bi bi-play-circle me-2"></i>
+        Watch Demo
+      </button>
+      
+    </div>
+    
+  </div>
+</div>
+<RegistrationSelectionModal 
+        isOpen={showRegistrationModal}
+        onClose={handleCloseModal}
+      />
         </div>
       </section>
       
@@ -889,7 +1013,7 @@ const handleUserTypeSelect = (userType) => {
               e.target.style.transform = 'translateY(0)';
               e.target.style.boxShadow = '0 4px 15px rgba(255,255,255,0.2)';
             }}
-            onClick={() => navigate('/register/student')}
+            onClick={handleGetStartedClick}
           >
             <i className="bi bi-person-plus me-2"></i>
             Get Started Now
@@ -915,6 +1039,10 @@ const handleUserTypeSelect = (userType) => {
           </button>
         </div>
       </div>
+      <RegistrationSelectionModal 
+        isOpen={showRegistrationModal}
+        onClose={handleCloseModal}
+      />
     </div>
   </div>
   
